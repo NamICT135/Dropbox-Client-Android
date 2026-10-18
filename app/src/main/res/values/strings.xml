@@ -1,0 +1,11 @@
+<resources>
+    <string name="app_name">Dropbox Client</string>
+    <string name="nav_files">Files</string>
+    <string name="nav_account">Account</string>
+    <string name="files_placeholder">File browser\nDropbox files will appear here.</string>
+    <string name="account_placeholder">Account\nDropbox account information will appear here.</string>
+    <string name="login_title">Dropbox Client</string>
+    <string name="login_description">Manage your Dropbox files from Android.</string>
+    <string name="login_demo_notice">Demo navigation only. Dropbox authentication is not connected.</string>
+    <string name="login_demo_button">Continue to demo</string>
+</resources>
