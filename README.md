@@ -1,441 +1,163 @@
-# Dropbox-Box-Client-Android
-Android mobile application for browsing, uploading, downloading and managing files on a cloud storage service such as Dropbox or Box
+# Dropbox Client Android
 
-## About the Project
+Android group project for the Mobile Application Development course at USTH. The app lets users sign in to Dropbox and manage their own cloud files using **Java and XML layouts**.
 
-This project is developed as a group project for the
-**Mobile Application Development** course at USTH.
+## Project status and scope
 
-The goal of the project is to build an Android mobile application
-that works as a client for a cloud storage service such as
-**Dropbox or Box**.
+This is the implementation plan, revised from the initial Dropbox / Box proposal. Features below are **planned**, not verified as implemented. Only Dropbox is in scope. Box, multiple providers and offline synchronization are excluded from the MVP. No custom backend, Firebase or Compose is planned.
 
-The application allows users to access and manage their cloud files
-from an Android device.
+## Feature priorities
 
----
-
-## Project Objectives
-
-The application aims to provide the following main functions:
-
-- User authentication with a cloud storage service
-- Browse files and folders
-- Open folders
-- Upload files
-- Download files
-- Create folders
-- Rename files or folders
-- Delete files or folders
-- Refresh cloud data
-
-Additional features may be implemented later:
-
-- File search
-- File preview
-- Upload/download progress
-- Offline file information
-- Shared links
-- Multiple cloud providers
-
----
-
-## Technology Stack
-
-### Android
-
-- Android Studio
-- Java
-- XML Layouts
-- Android SDK
-
-### Android Components
-
-- Activity
-- Fragment
-- View / ViewGroup
-- Intent
-- Android Resources
-- AndroidManifest.xml
-
-### Networking
-
-The application communicates with the cloud service through HTTP APIs.
-
-Planned technologies:
-
-- HTTP/REST requests
-- JSON data representation
-- Cloud provider API
-- Android Internet permission
-
-The final networking library will be selected during implementation.
-
-### Background Processing
-
-Network operations and file transfers must not block the Android
-main/UI thread.
-
-Background processing will therefore be used for:
-
-- Loading file lists
-- Uploading files
-- Downloading files
-- Refreshing cloud data
-
----
-
-## Planned Features
-
-| Feature | Description | Status |
+| Priority | Features | Acceptance criteria |
 |---|---|---|
-| Authentication | Sign in to cloud storage account | Planned |
-| File Browser | Display files and folders | Planned |
-| Folder Navigation | Navigate through cloud folders | Planned |
-| Upload | Upload a file to cloud storage | Planned |
-| Download | Download a cloud file | Planned |
-| Create Folder | Create a new folder | Planned |
-| Rename | Rename file/folder | Planned |
-| Delete | Delete file/folder | Planned |
-| Refresh | Reload cloud file information | Planned |
-| Search | Search files | Optional |
-| File Preview | Preview supported files | Optional |
+| MVP | Dropbox login, logout, account information | Authorize through Dropbox; show account; clear local session on logout |
+| MVP | File/folder browser, folder navigation, refresh | Browse root and nested folders; return to parent; handle pagination and empty folders |
+| MVP | Create folder, rename, delete | Validate names; show conflicts; confirm deletion; refresh after success |
+| MVP | Upload and download | Select a local file and destination using Android file pickers; verify uploaded/downloaded content |
+| MVP | Loading, empty and error states | No crash on cancellation, network failure or expired authorization; allow retry |
+| Optional after MVP | Search, shared links, image/PDF preview, transfer percentage, dark mode | Separate issues; implement only after MVP passes |
+| Out of MVP | Offline cache/sync, multi-provider support | No delivery commitment |
 
----
+## Technology and architecture
 
-# System Architecture
-
-The application follows a simple layered architecture.
+- Java, XML, Android Studio, Activity, Fragment, RecyclerView, Intent and Android resources.
+- Dropbox API v2 over HTTPS; official Java/Android SDK is the intended integration. SDK objects represent API responses; the presentation must still explain HTTP, JSON and OAuth.
+- Simple layered design. Application logic stays small; do not create a controller class for every action without a need.
+- Background network/file I/O with an executor and delivery of UI updates on the main thread. Handle lifecycle changes and stale callbacks. AsyncTask is not the planned implementation.
 
 ```mermaid
 flowchart TD
-
-    USER[User]
-
-    UI[Android UI<br/>Activities / Fragments / XML]
-
-    CONTROLLER[Application Logic]
-
-    REPOSITORY[Cloud Repository]
-
-    NETWORK[Network / API Client]
-
-    LOCAL[Local Data / Session]
-
-    API[Dropbox API / Box API]
-
-    USER --> UI
-    UI --> CONTROLLER
-    CONTROLLER --> REPOSITORY
-
-    REPOSITORY --> NETWORK
-    REPOSITORY --> LOCAL
-
-    NETWORK --> API
-    API --> NETWORK
-
-    NETWORK --> REPOSITORY
-    REPOSITORY --> CONTROLLER
-    CONTROLLER --> UI
+    UI[Activities and Fragments with XML] --> LOGIC[Application logic]
+    LOGIC --> REPO[DropboxRepository]
+    REPO --> CLIENT[Dropbox client and OAuth]
+    REPO --> SESSION[SessionManager]
+    CLIENT --> API[Dropbox API v2]
 ```
 
----
+LoginActivity opens Dropbox authorization, then MainActivity hosts FileBrowserFragment and AccountFragment. Create, rename and delete use dialogs. Upload/download use system file pickers; separate upload/details/preview screens are not required for MVP.
 
-## Application Flow
+### Target structure
 
-```mermaid
-flowchart LR
-
-    START[Start App]
-    LOGIN[Login]
-    AUTH[Authentication]
-    FILES[File Browser]
-    ACTION[File Operation]
-    API[Cloud API]
-    UPDATE[Update UI]
-
-    START --> LOGIN
-    LOGIN --> AUTH
-    AUTH --> FILES
-    FILES --> ACTION
-    ACTION --> API
-    API --> UPDATE
-    UPDATE --> FILES
-```
-
-Example:
-
-User
-
-→ Android Activity / Fragment
-
-→ Application Logic
-
-→ Network Client
-
-→ Dropbox / Box API
-
-→ JSON Response
-
-→ Parse Data
-
-→ Update Android UI
-
----
-
-# Project Structure
+The following is a proposed structure, not a claim that these files already exist. The package name must be confirmed at M1.
 
 ```text
-app/
-└── src/
-    └── main/
-        │
-        ├── java/
-        │   └── vn/edu/usth/cloudbox/
-        │       │
-        │       ├── ui/
-        │       │   ├── login/
-        │       │   ├── files/
-        │       │   └── settings/
-        │       │
-        │       ├── model/
-        │       │
-        │       ├── network/
-        │       │
-        │       ├── repository/
-        │       │
-        │       ├── storage/
-        │       │
-        │       └── utils/
-        │
-        ├── res/
-        │   ├── layout/
-        │   ├── drawable/
-        │   ├── mipmap/
-        │   ├── values/
-        │   └── menu/
-        │
-        └── AndroidManifest.xml
+Dropbox-Client-Android/
+├── app/src/main/
+│   ├── java/vn/edu/usth/dropboxclient/
+│   │   ├── ui/login/LoginActivity.java
+│   │   ├── ui/files/{MainActivity,FileBrowserFragment,FileAdapter}.java
+│   │   ├── ui/account/AccountFragment.java
+│   │   ├── model/{CloudItem,UserAccount}.java
+│   │   ├── dropbox/{DropboxRepository,DropboxAuthManager,DropboxClientFactory}.java
+│   │   ├── storage/SessionManager.java
+│   │   └── utils/FileUtils.java
+│   ├── res/{layout,drawable,mipmap,values,menu}/
+│   └── AndroidManifest.xml
+├── docs/                         # architecture, API setup, test evidence
+├── gradle/wrapper/
+├── gradlew
+├── gradlew.bat
+├── README.md
+└── .gitignore
 ```
 
-### Package Responsibilities
+Agree on repository contracts before parallel implementation: list(path, cursor), getAccount(), createFolder(path), rename(oldPath, newPath), delete(path), upload(sourceUri, destination), download(item, destinationUri). These are conceptual contracts; exact Java signatures, callback types and cancellation rules are to be agreed at M1. UI must not scatter SDK calls across screens. One owner coordinates edits to the shared repository.
 
-#### `ui/`
+## Milestones and team
 
-Contains Android screens and user-interface components.
+Milestones are completion gates, not calendar deadlines. There are nine gates M0–M8.
 
-Examples:
-
-- LoginActivity
-- MainActivity
-- FileListFragment
-- SettingsActivity
-
-#### `model/`
-
-Contains application data models.
-
-Examples:
-
-- CloudFile
-- CloudFolder
-- UserAccount
-
-#### `network/`
-
-Responsible for communication with the cloud API.
-
-Examples:
-
-- API requests
-- HTTP connection
-- JSON responses
-
-#### `repository/`
-
-Connects application logic with cloud/network data.
-
-#### `storage/`
-
-Handles local application data and session information.
-
-#### `utils/`
-
-Contains reusable helper classes.
-
----
-
-# Android Screens
-
-Initial planned screens:
-
-1. Login Screen
-2. File Browser Screen
-3. File Details Screen
-4. Upload Screen / File Picker
-5. Settings / Account Screen
-
----
-
-# Running the Application
-
-## Requirements
-
-- Android Studio
-- Android SDK
-- Java
-- Git
-- Internet connection
-- Android emulator or physical Android device
-
-## Clone Repository
-
-```bash
-git clone <repository-url>
-```
-
-Open Android Studio.
-
-Select:
-
-```text
-File
-→ Open
-→ Dropbox-Box-Client-Android
-```
-
-Wait for Gradle synchronization to complete.
-
-Then select an Android emulator or connected Android device.
-
-Press:
-
-```text
-Run ▶
-```
-
----
-
-# API Configuration
-
-The application will communicate with the selected cloud provider API.
-
-API credentials and secret information MUST NOT be committed directly
-to the GitHub repository.
-
-Configuration instructions will be added after the cloud provider and
-authentication method are finalized.
-
----
-
-# Git Workflow
-
-The main stable branch is:
-
-```text
-main
-```
-
-Development work should be performed on separate branches.
-
-Example:
-
-```text
-feature/login
-feature/file-browser
-feature/upload
-feature/download
-feature/file-management
-```
-
-Typical workflow:
-
-```text
-main
-  |
-  └── feature/your-feature
-          |
-          ├── commits
-          |
-          └── Pull Request
-                  |
-                  └── review
-                         |
-                         └── main
-```
-
-Do not work directly on `main` unless necessary.
-
----
-
-# Commit Message Convention
-
-Use clear commit messages.
-
-Examples:
-
-```text
-feat: add login screen
-feat: display cloud file list
-feat: implement file upload
-fix: handle network error
-fix: prevent crash when folder is empty
-docs: update architecture diagram
-refactor: reorganize network package
-```
-
-Avoid unclear commit messages such as:
-
-```text
-update
-fix
-done
-abc
-test
-final
-```
-
----
-
-# Team
-
-| Member | Responsibility | GitHub |
+| Gate | Deliverable | Completion evidence |
 |---|---|---|
-| Member 1 | To be assigned | |
-| Member 2 | To be assigned | |
-| Member 3 | To be assigned | |
-| Member 4 | To be assigned | |
-| Member 5 | To be assigned | |
-| Member 6 | To be assigned | |
+| M0 | Scope and roles | MVP, owners and open decisions recorded |
+| M1 | GitHub and Android skeleton | Clean clone builds/runs; contracts and toolchain agreed |
+| M2 | Dropbox configuration and OAuth | Login, account, cancellation and logout verified |
+| M3 | File browser | Root, nested/empty folders, back navigation, pagination verified |
+| M4 | File operations | Create, rename, conflict handling and confirmed delete verified |
+| M5 | Transfers | Small-file upload/download and failure recovery verified |
+| M6 | Integration and UI | Complete flows; loading/error/empty states; lifecycle handling |
+| M7 | Testing | Test matrix and regression results recorded; critical bugs fixed |
+| M8 | Documentation and demo | README, architecture, slides and rehearsed demo match the app |
 
-Responsibilities will be finalized after the initial architecture
-and feature list are agreed upon.
+| Member placeholder | Technical ownership | Review partner |
+|---|---|---|
+| 1 | Skeleton, navigation, contracts and integration | 3 |
+| 2 | OAuth, account data and session | 6 |
+| 3 | RecyclerView, pagination and folder navigation | 1 |
+| 4 | Upload/download, file URI handling and transfer errors | 5 |
+| 5 | Create/rename/delete and validation | 4 |
+| 6 | Account UI, shared UI states and regression support | 2 |
 
----
+Replace placeholders with names/GitHub handles at M0. All members write code, test their module, review PRs and contribute to README/slides. After M1, members can use mocks against agreed contracts while OAuth is being implemented; live integration depends on M2. Optional preview remains optional for Member 6.
 
-# Development Status
+## API configuration
 
-Current phase:
+1. Create a scoped app in the [Dropbox App Console](https://www.dropbox.com/developers/apps). **Full Dropbox is proposed** for browsing existing user files; App Folder is the alternative for an isolated demo. Confirm the access type before app creation and use a dedicated test account.
+2. Enable only required scopes: `account_info.read`, `files.metadata.read`, `files.metadata.write`, `files.content.read`, `files.content.write`. Add sharing scopes only if shared links are approved. Reauthorize after scope changes as required.
+3. Use OAuth 2.0 authorization code flow with PKCE. Do not embed an app secret or use a manually generated personal token as the application's login flow.
+4. Proposed local configuration in ignored `local.properties`: `DROPBOX_APP_KEY=YOUR_APP_KEY`. Member 1 must implement Gradle property loading and pass the value to the SDK and OAuth manifest callback configuration. A property alone does not configure the app. The app key is a public client identifier, not a secret.
+5. Add `android.permission.INTERNET`. Configure the SDK OAuth Activity/redirect intent filter exactly as required by the selected SDK; ensure scheme/redirect registration matches. Test return from browser/Dropbox authorization, cancellation and activity recreation. Do not guess a universal callback URI.
+6. Define session persistence and refresh policy before M2. If refresh credentials are required, request the appropriate offline authorization and securely persist them. Clear credentials and in-memory clients on logout; document whether account access is also revoked.
+7. Pin a compatible SDK version after checking JDK, AGP, Gradle and minSdk. The official SDK currently documents v8 as Java 21+ and Android API 26+, and directs Java 8–20 projects to compatible 7.x. It requires SDK v7+ for server compatibility. Do not copy old tutorial versions or use a dynamic version.
 
-**Project initialization and architecture design**
+Source: [official SDK setup](https://github.com/dropbox/dropbox-sdk-java), [OAuth guide](https://docs.dropboxapi.com/dropbox-api/docs/oauth), [file access guide](https://docs.dropboxapi.com/dropbox-api/docs/file-access). Recheck compatibility when selecting the dependency.
 
-Next milestones:
+## Setup and running
 
-1. Initialize Android Studio project
-2. Select Dropbox API or Box API
-3. Implement authentication
-4. Implement cloud file listing
-5. Implement upload/download
-6. Complete file management features
-7. Testing
-8. Final demo and presentation
+The Android project and actual toolchain must be added at M1 before these steps can be validated. Repository URL, SDK versions and application ID are **TBD**.
 
----
+1. Clone the team's actual repository using `git clone <repository-url>`.
+2. Open its root in Android Studio. Use the JDK/Android SDK agreed at M1 and sync Gradle.
+3. Complete API configuration above; never paste tokens into source files.
+4. Select a compatible emulator or device, ensure Internet access and run `app`.
+5. Sign in using a test Dropbox account and verify browsing before file operations.
 
-# Course
+The committed Gradle wrapper must be used. After the skeleton exists, Windows checks are:
 
-**Mobile Application Development**
+```powershell
+.\gradlew.bat assembleDebug lintDebug testDebugUnitTest
+.\gradlew.bat connectedDebugAndroidTest
+```
 
-University of Science and Technology of Hanoi (USTH)
+The second command requires a device/emulator and configured instrumentation tests. A successful build does not establish live OAuth/API correctness.
 
-Group Project – Dropbox / Box Client
+## Git and GitHub workflow
+
+- Invite the other five members as collaborators; use Issues with owner, acceptance criteria and milestone. Track To do → In progress → Review → Done.
+- Keep `main` stable. Work on `feature/auth`, `feature/file-browser`, `feature/upload-download`, `feature/file-operations`, `feature/account`, or `feature/ui-testing`; use `fix/...` for focused fixes.
+- Update from `main`, implement a small task, inspect the diff, commit and push your branch, then open a PR. Require a peer review and relevant build/test evidence before merging. Enable branch protection where available; do not push directly to `main`.
+- PRs describe behavior, screenshots for UI changes, test evidence and known limits. Coordinate shared files such as Gradle, Manifest, navigation and DropboxRepository with their owners.
+- Use clear messages such as `feat: paginate Dropbox folders`, `fix: handle cancelled login`, `docs: explain OAuth setup`. Avoid messages such as `update` or `done`.
+- Commit wrapper files. Ignore local.properties, build output, tokens, keystores and personal credentials. Never force push shared branches or rewrite shared history.
+
+## Technical and security rules
+
+- No network or heavy file I/O on the main thread; update views only on the main thread. Cancel or ignore stale results when screens change; preserve current folder on rotation.
+- Follow `has_more` and cursor continuation; handle rate limits with bounded backoff and actionable errors. Do not blindly retry destructive operations after an uncertain result; refresh first.
+- Use Storage Access Framework and ContentResolver streams, not assumed filesystem paths from content URIs. Close streams and avoid reading whole files into memory. Do not request broad storage access for the MVP.
+- Start with small demo files. Decide and document a supported size limit at M1; reject oversized input clearly. Large upload sessions, persistent background transfers and process-death recovery are not committed MVP features.
+- Validate names and conflicts; confirm delete. Disable duplicate submissions. Do not silently overwrite files.
+- Keep strings/dimensions/colors in resources. Handle loading, empty and error states consistently.
+- Never commit/log access tokens, refresh tokens, app secrets, passwords or authorization responses. Keep persisted credentials in app-private encrypted storage with keys protected by Android Keystore; exclude credential material from backup. Exact storage implementation is TBD at M2.
+- Use HTTPS; never disable certificate checks. Use disposable demo data. If credentials leak, revoke/rotate them immediately; deleting a file in a later commit does not remove the leak.
+
+## Testing and demo checklist
+
+Every module owner records expected/actual result, device/API level and evidence. Unit-test meaningful pure logic (paths, validation, error mapping); test UI/lifecycle and live API integration separately.
+
+- [ ] Clean clone, configuration and Gradle sync work on a second member's machine.
+- [ ] Login success/cancel, expired authorization/refresh, logout and relaunch behave correctly.
+- [ ] Root, nested and empty folders; back navigation; pagination and Vietnamese filenames work.
+- [ ] Create/rename/delete, name conflicts and delete cancellation work on test data.
+- [ ] Upload/download contents are correct; picker cancellation and transfer failures are handled.
+- [ ] No Internet, rate limits, rapid taps and screen rotation produce no crash or stale UI.
+- [ ] Build/lint/tests pass; emulator demo is rehearsed; no credentials appear in logs/slides/repo.
+- [ ] Presentation follows Introduction → Architecture → Activities → Networking → Optimization → Demo → Conclusion. Course slides specify 15 minutes plus 3 minutes Q&A; demonstrate actual optimization evidence such as UI overdraw rather than claiming unmeasured performance gains.
+
+## Decisions still open
+
+Names/handles, repository URL, deadlines, license, package/application ID, JDK/AGP/Gradle/SDK versions, access type, exact OAuth callback configuration, credential storage implementation and supported transfer size must be recorded at M0–M2. Full Dropbox and the package tree above are proposals. No implementation, test pass, GitHub publication or deployment is claimed by this document.
+
+## Course references
+
+The supplied slides cover Android fundamentals, resources, background tasks, networking and touch input. Course Introduction identifies Dropbox/Box as a topic, requests initial GitHub instructions and meaningful commits, and supplies the presentation structure. Its slide says five students per group; this plan follows the requested six-person team, which should be confirmed with the lecturer. Modern implementation choices preserve the slide principles without copying legacy APIs blindly.
