@@ -4,7 +4,18 @@ Android group project for the Mobile Application Development course at USTH. The
 
 ## Project status and scope
 
-This is the implementation plan, revised from the initial Dropbox / Box proposal. Features below are **planned**, not verified as implemented. Only Dropbox is in scope. Box, multiple providers and offline synchronization are excluded from the MVP. No custom backend, Firebase or Compose is planned.
+The project is currently in **Milestone 1: GitHub and Android skeleton**. The Java/XML skeleton is implemented and merged into `main`; Dropbox OAuth and all live API operations remain planned. Only Dropbox is in scope. Box, multiple providers and offline synchronization are excluded from the MVP. No custom backend, Firebase or Compose is planned.
+
+### Current implementation
+
+- Confirmed package and application ID: `vn.edu.usth.dropboxclient`.
+- `LoginActivity` is the launcher and contains a demo-only button that opens `MainActivity`.
+- `MainActivity` hosts `FileBrowserFragment` and `AccountFragment` with working Files / Account navigation.
+- The two fragments currently show placeholder content; no Dropbox account or file data is loaded.
+- The project builds and runs on a Pixel 6 emulator with Android 14 (API 34).
+- Local validation on 18 October 2026: `assembleDebug` passed, lint reported 0 errors and 6 warnings, and the generated unit test passed 1/1.
+
+Milestone 1 remains open until another team member completes a clean clone, Gradle sync, build and run.
 
 ## Feature priorities
 
@@ -20,8 +31,10 @@ This is the implementation plan, revised from the initial Dropbox / Box proposal
 
 ## Technology and architecture
 
-- Java, XML, Android Studio, Activity, Fragment, RecyclerView, Intent and Android resources.
-- Dropbox API v2 over HTTPS; official Java/Android SDK is the intended integration. SDK objects represent API responses; the presentation must still explain HTTP, JSON and OAuth.
+- Java, XML, Android Studio, Activity, Fragment, Intent and Android resources. RecyclerView is planned for the file browser.
+- `minSdk` 26, `targetSdk` 36 and `compileSdk` 36.1.
+- Java 11 source compatibility; Gradle uses a Java 21 toolchain. Android Studio's bundled JBR 21 is the recommended build JDK.
+- Dropbox API v2 over HTTPS and the official Java/Android SDK are planned but not yet added. SDK objects will represent API responses; the presentation must still explain HTTP, JSON and OAuth.
 - Simple layered design. Application logic stays small; do not create a controller class for every action without a need.
 - Background network/file I/O with an executor and delivery of UI updates on the main thread. Handle lifecycle changes and stale callbacks. AsyncTask is not the planned implementation.
 
@@ -34,26 +47,30 @@ flowchart TD
     CLIENT --> API[Dropbox API v2]
 ```
 
-LoginActivity opens Dropbox authorization, then MainActivity hosts FileBrowserFragment and AccountFragment. Create, rename and delete use dialogs. Upload/download use system file pickers; separate upload/details/preview screens are not required for MVP.
+Currently, `LoginActivity` provides demo navigation to `MainActivity`, which hosts `FileBrowserFragment` and `AccountFragment`. Milestone 2 will replace the demo action with Dropbox OAuth. Create, rename and delete will use dialogs. Upload/download will use system file pickers; separate upload/details/preview screens are not required for MVP.
 
-### Target structure
+### Current structure
 
-The following is a proposed structure, not a claim that these files already exist. The package name must be confirmed at M1.
+The package name is confirmed as `vn.edu.usth.dropboxclient`. The current source structure is:
 
 ```text
 Dropbox-Client-Android/
 ├── app/src/main/
 │   ├── java/vn/edu/usth/dropboxclient/
 │   │   ├── ui/login/LoginActivity.java
-│   │   ├── ui/files/{MainActivity,FileBrowserFragment,FileAdapter}.java
+│   │   ├── ui/main/MainActivity.java
+│   │   ├── ui/files/FileBrowserFragment.java
 │   │   ├── ui/account/AccountFragment.java
-│   │   ├── model/{CloudItem,UserAccount}.java
-│   │   ├── dropbox/{DropboxRepository,DropboxAuthManager,DropboxClientFactory}.java
-│   │   ├── storage/SessionManager.java
-│   │   └── utils/FileUtils.java
-│   ├── res/{layout,drawable,mipmap,values,menu}/
+│   ├── res/
+│   │   ├── layout/activity_login.xml
+│   │   ├── layout/activity_main.xml
+│   │   ├── layout/fragment_file_browser.xml
+│   │   ├── layout/fragment_account.xml
+│   │   ├── drawable/
+│   │   ├── mipmap/
+│   │   ├── values/
+│   │   └── xml/
 │   └── AndroidManifest.xml
-├── docs/                         # architecture, API setup, test evidence
 ├── gradle/wrapper/
 ├── gradlew
 ├── gradlew.bat
@@ -61,7 +78,7 @@ Dropbox-Client-Android/
 └── .gitignore
 ```
 
-Agree on repository contracts before parallel implementation: list(path, cursor), getAccount(), createFolder(path), rename(oldPath, newPath), delete(path), upload(sourceUri, destination), download(item, destinationUri). These are conceptual contracts; exact Java signatures, callback types and cancellation rules are to be agreed at M1. UI must not scatter SDK calls across screens. One owner coordinates edits to the shared repository.
+The `model`, `dropbox`, `storage` and `utils` packages will be created only when their implementations begin. Before parallel API work, agree on repository contracts for list, account, create, rename, delete, upload and download operations. Exact Java signatures, callback types and cancellation rules are still open. UI code must not scatter SDK calls across screens. One owner coordinates edits to the shared repository.
 
 ## Milestones and team
 
@@ -104,22 +121,33 @@ Source: [official SDK setup](https://github.com/dropbox/dropbox-sdk-java), [OAut
 
 ## Setup and running
 
-The Android project and actual toolchain must be added at M1 before these steps can be validated. Repository URL, SDK versions and application ID are **TBD**.
+Requirements:
 
-1. Clone the team's actual repository using `git clone <repository-url>`.
-2. Open its root in Android Studio. Use the JDK/Android SDK agreed at M1 and sync Gradle.
-3. Complete API configuration above; never paste tokens into source files.
-4. Select a compatible emulator or device, ensure Internet access and run `app`.
-5. Sign in using a test Dropbox account and verify browsing before file operations.
+- Android Studio with Android SDK 36.1 installed.
+- JDK 21 for Gradle. The JBR bundled with Android Studio is recommended.
+- Android emulator or physical device running Android 8.0 (API 26) or later.
 
-The committed Gradle wrapper must be used. After the skeleton exists, Windows checks are:
+1. Clone the repository:
+
+   ```powershell
+   git clone https://github.com/NamICT135/Dropbox-Client-Android.git
+   ```
+
+2. Open the cloned repository root in Android Studio and wait for Gradle sync.
+3. Allow Android Studio to create the machine-specific, ignored `local.properties` file.
+4. Select a compatible emulator or device and run the `app` configuration.
+5. Verify the current demo flow: Login screen → Continue to demo → Files / Account navigation.
+
+Dropbox configuration is not required for the current skeleton. Do not paste tokens or credentials into source files.
+
+Use the committed Gradle wrapper. On Windows, run:
 
 ```powershell
 .\gradlew.bat assembleDebug lintDebug testDebugUnitTest
 .\gradlew.bat connectedDebugAndroidTest
 ```
 
-The second command requires a device/emulator and configured instrumentation tests. A successful build does not establish live OAuth/API correctness.
+The first line was verified locally on 18 October 2026. `connectedDebugAndroidTest` still requires a running device/emulator and configured instrumentation tests. A successful build does not establish live OAuth/API correctness.
 
 ## Git and GitHub workflow
 
@@ -145,18 +173,22 @@ The second command requires a device/emulator and configured instrumentation tes
 
 Every module owner records expected/actual result, device/API level and evidence. Unit-test meaningful pure logic (paths, validation, error mapping); test UI/lifecycle and live API integration separately.
 
+- [x] Local Gradle sync and `assembleDebug` complete successfully.
+- [x] Lint completes with 0 errors and 6 non-blocking warnings.
+- [x] Current unit test passes 1/1.
+- [x] Login demo and Files / Account navigation run on Pixel 6 API 34.
 - [ ] Clean clone, configuration and Gradle sync work on a second member's machine.
 - [ ] Login success/cancel, expired authorization/refresh, logout and relaunch behave correctly.
 - [ ] Root, nested and empty folders; back navigation; pagination and Vietnamese filenames work.
 - [ ] Create/rename/delete, name conflicts and delete cancellation work on test data.
 - [ ] Upload/download contents are correct; picker cancellation and transfer failures are handled.
 - [ ] No Internet, rate limits, rapid taps and screen rotation produce no crash or stale UI.
-- [ ] Build/lint/tests pass; emulator demo is rehearsed; no credentials appear in logs/slides/repo.
+- [ ] Full MVP build/lint/tests pass; final emulator demo is rehearsed; no credentials appear in logs/slides/repo.
 - [ ] Presentation follows Introduction → Architecture → Activities → Networking → Optimization → Demo → Conclusion. Course slides specify 15 minutes plus 3 minutes Q&A; demonstrate actual optimization evidence such as UI overdraw rather than claiming unmeasured performance gains.
 
 ## Decisions still open
 
-Names/handles, repository URL, deadlines, license, package/application ID, JDK/AGP/Gradle/SDK versions, access type, exact OAuth callback configuration, credential storage implementation and supported transfer size must be recorded at M0–M2. Full Dropbox and the package tree above are proposals. No implementation, test pass, GitHub publication or deployment is claimed by this document.
+Names/handles, deadlines, license, Dropbox access type, exact Dropbox SDK version, OAuth callback configuration, credential storage implementation and supported transfer size remain open for M0–M2. Full Dropbox is still a proposal. The repository currently contains only the verified Android UI skeleton; OAuth, Dropbox API access and MVP file operations are not implemented.
 
 ## Course references
 
