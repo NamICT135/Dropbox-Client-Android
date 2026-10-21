@@ -1,17 +1,17 @@
 # Dropbox Client Android
 
-Android group project for the Mobile Application Development course at USTH. The app lets users sign in to Dropbox and manage their own cloud files using **Java and XML layouts**.
+Android group project for the Mobile Application Development course at USTH. The academic demo uses local username accounts and a shared project Dropbox connection to manage project cloud files using **Java and XML layouts**.
 
 ## Project status and scope
 
-The project has a merged Java/XML skeleton. **Milestone 2: OAuth integration is implemented on the feature branch; live authorization acceptance is pending a Developer App key and user consent.** Only Dropbox is in scope. Box, multiple providers and offline synchronization are excluded from the MVP. No custom backend, Firebase or Compose is planned.
+The project has a merged Java/XML skeleton. **Milestone 2: local academic demo login plus a separate real Dropbox project connection.** Live API acceptance requires a dedicated project Dropbox account; the group has not created one yet. Only Dropbox is in scope. Box, multiple providers and offline synchronization are excluded from the MVP. No custom backend, Firebase or Compose is planned.
 
 ### Current implementation
 
 - Confirmed package and application ID: `vn.edu.usth.dropboxclient`.
-- `LoginActivity` launches Dropbox OAuth PKCE and restores an encrypted local session.
+- `LoginActivity` registers and authenticates device-local demo users by username; personal email is not required. `ProjectDropboxActivity` handles one-time project-account OAuth setup separately.
 - `MainActivity` hosts `FileBrowserFragment` and `AccountFragment` with working Files / Account navigation.
-- `AccountFragment` loads live account name, email and account ID through `DropboxRepository` on a background executor, with refresh and local logout. Files remains a placeholder.
+- `AccountFragment` shows the local demo username and the independent project-storage connection. When configured, it loads the Dropbox display name through `DropboxRepository` on a background executor. Demo logout preserves the Dropbox connection; a separate Disconnect action removes it. Files remains a placeholder.
 - The project builds and runs on a Pixel 6 emulator with Android 14 (API 34).
 - Local validation on 18 October 2026: `assembleDebug` passed, lint reported 0 errors and 6 warnings, and the generated unit test passed 1/1.
 
@@ -47,7 +47,7 @@ flowchart TD
     CLIENT --> API[Dropbox API v2]
 ```
 
-Currently, `LoginActivity` handles OAuth and opens `MainActivity` on the Account tab. `MainActivity` hosts `FileBrowserFragment` and `AccountFragment`. Create, rename and delete will use dialogs. Upload/download will use system file pickers; separate upload/details/preview screens are not required for MVP.
+Currently, `LoginActivity` handles local demo login and opens `MainActivity` on the Account tab. OAuth is accessed through Set up project storage, not user login. `MainActivity` hosts `FileBrowserFragment` and `AccountFragment`. Create, rename and delete will use dialogs. Upload/download will use system file pickers; separate upload/details/preview screens are not required for MVP.
 
 ### Current structure
 
@@ -190,23 +190,38 @@ Every module owner records expected/actual result, device/API level and evidence
 
 ## Decisions still open
 
-Names/handles, deadlines, license, Dropbox access type, exact Dropbox SDK version, OAuth callback configuration, credential storage implementation and supported transfer size remain open for M0–M2. Full Dropbox is still a proposal. The repository currently contains only the verified Android UI skeleton; OAuth, Dropbox API access and MVP file operations are not implemented.
+Names/handles, deadlines, license and supported transfer size remain open. This implementation uses Scoped App Folder, SDK 8.0.2, PKCE and Android Keystore credential storage. The account repository calls the real Dropbox API; live acceptance is pending a dedicated project account. MVP file operations remain planned.
 
 ## Course references
 
 The supplied slides cover Android fundamentals, resources, background tasks, networking and touch input. Course Introduction identifies Dropbox/Box as a topic, requests initial GitHub instructions and meaningful commits, and supplies the presentation structure. Its slide says five students per group; this plan follows the requested six-person team, which should be confirmed with the lecturer. Modern implementation choices preserve the slide principles without copying legacy APIs blindly.
 
-## Milestone 2: local OAuth setup and acceptance
+## Milestone 2: academic demo login and real project storage
 
-1. Open https://www.dropbox.com/developers/apps and create a **Scoped access / App folder** app. Enable **account_info.read** under Permissions and Submit. Development accounts must be permitted by the app settings.
-2. Add `DROPBOX_APP_KEY=your_app_key` to the ignored root `local.properties` (preserve `sdk.dir`). Alternatively set the `DROPBOX_APP_KEY` environment variable. App key is public and embedded in the APK; App secret is never needed by PKCE. Never add tokens or App secret to source, configuration committed to Git, screenshots or logs.
-3. Sync/rebuild/install the app. The manifest callback scheme `db-<app key>` is generated from the same configuration. The SDK handles the browser redirect through `AuthActivity`; do not configure a localhost/web callback for this Android SDK flow.
-4. Sign in with Dropbox and grant consent. The Account tab should load real name, email and account ID. Cancel and retry authorization, rotate the screen, restart the app, disable networking and retry, then log out and relaunch. Revoke access in Dropbox settings and verify reauthentication. A missing app key allows builds but shows setup instructions instead of starting OAuth.
+These are two independent sessions:
 
-Implementation: `auth/DropboxAuthManager` starts PKCE with only `account_info.read`; `auth/DropboxClientFactory` builds the SDK client from a `DbxCredential`; `auth/SessionManager` encrypts the credential JSON with AES-GCM and Android Keystore. Credential preferences are excluded from cloud backup and device transfer. Refresh tokens permit SDK access-token refresh on the background API thread. Session read/save and API calls use executors. Stale Fragment callbacks are ignored after view destruction or logout. SDK auth callbacks are consumed only after a login attempt; cancelled or interrupted flows can be retried.
+- **Demo users:** register/log in locally with a username (3-24 letters, digits or underscores) and a test password (8-128 characters). No email, email verification or Dropbox account is required. Usernames are case-insensitive. Registration signs in immediately. The local session survives app restarts; Log out of demo clears only that session. Passwords use PBKDF2-HMAC-SHA256 (120,000 iterations) with a fresh 16-byte salt per account; plaintext passwords are not saved. Use disposable test passwords. This is an academic local login, not a production identity service.
+- **Project storage:** a group member authorizes one dedicated project Dropbox account on each demo device through Account > Set up project storage. All local demo users share this cloud storage. Demo credentials do not authorize Dropbox and do not provide per-user cloud isolation. The app does not fabricate successful API responses when storage is disconnected.
 
-Logout clears the local session and task stack. It does not revoke Dropbox consent or sign out the device browser/official Dropbox app; revoke access from Dropbox Connected apps when required. There is no network token revocation during local logout. Account permission/network errors show Retry; invalid access tokens return to Login. The Files feature remains outside this milestone.
+`DemoAuthManager` owns local accounts/session. Existing `SessionManager` stores only the project `DbxCredential`, encrypted with AES-GCM/Android Keystore. Both preference files are excluded from cloud backup and device transfer. `DropboxClientFactory` builds `DbxClientV2`; `DropboxRepository.getCurrentAccount()` still calls the real Dropbox API. Password derivation, token persistence and API calls run on worker executors; stale view callbacks are discarded. The main screen and setup Activity require a demo session.
 
-Validation commands (Android Studio bundled JBR): `gradlew.bat assembleDebug testDebugUnitTest lintDebug`; with an emulator/device: `gradlew.bat connectedDebugAndroidTest`. Instrumentation checks encrypted session round-trip, logout persistence and corrupt-data reporting. Existing example tests are smoke checks only. Live OAuth, account API and refresh/revocation acceptance remain pending until a real App key and interactive consent are available.
+### Setup
 
-Validation on 21 October 2026: `assembleDebug`, `testDebugUnitTest`, `lintDebug`, and `connectedDebugAndroidTest` passed using JBR and Pixel 6 API 34. Unit test: 1 passed; instrumentation: 3 passed (2 secure-session tests plus the existing context smoke test). Lint: 0 errors, 12 warnings. Live Dropbox authorization/account retrieval is not yet verified.
+1. Create an email and Dropbox account specifically for the project. Personal email/accounts are not needed from demo participants. The developer app currently allows only its owner; if the project Dropbox account differs from the developer-app owner, permit development users in App Console before authorizing it. The group does **not** yet have the dedicated account, so live account retrieval is not verified.
+2. Register a Scoped access / App folder Developer App at https://www.dropbox.com/developers/apps, or use the existing project app. Enable `account_info.read`; allow public clients/PKCE. This milestone requests only account scope. File operations will need their matching scopes in a later milestone.
+3. Set `DROPBOX_APP_KEY=your_app_key` in ignored root `local.properties` (preserve `sdk.dir`), or set the environment variable. App key is public; no App secret or token belongs in Git, APK source, logs or screenshots. Rebuild. The matching `db-<app key>` callback scheme is generated automatically for SDK `AuthActivity`.
+4. Register/log in with a demo username. The account screen works without a Dropbox connection and reports that storage is not connected.
+5. Choose **Set up project storage > Connect project Dropbox**, then a group member signs in with the dedicated project account and grants consent. `getCurrentAccount()` verifies the credential before it is saved. Return to Account to see the real Dropbox connection. Setup does not ask demo participants to sign in with personal email.
+6. Log out of demo and register another username: the project connection remains. **Disconnect project storage** is a separate confirmed action affecting every demo user on this device; it removes only the local cloud credential, not accounts or files. Revoke Dropbox consent in Dropbox settings if needed. A local demo account is not an administrator boundary; setup is intended for supervised academic devices.
+
+If authorization is cancelled or the network fails, retry from setup; an existing project connection is not replaced on failure. Invalid access tokens produce a reconnect state without signing out the demo user. The SDK uses refresh tokens for access-token refresh. If access is revoked, credentials become unreadable or app configuration changes, setup may be required again. Demo logout does not sign out the browser, revoke Dropbox consent or delete project files.
+
+### Verification
+
+Build/check: `gradlew.bat assembleDebug testDebugUnitTest lintDebug`. Device checks: `gradlew.bat connectedDebugAndroidTest` with a single emulator/device.
+
+Unit tests cover local registration/login/session restore, duplicate usernames, wrong credentials, salted password hashing, storage failure, and SDK account-response parsing/error propagation using an in-memory HTTP transport. These transport tests do not prove live Dropbox access. Instrumentation uses isolated test preferences and checks encrypted credentials, corruption handling, and that demo logout preserves project credentials.
+
+Manual acceptance: register without email, rotate/relaunch, log out and log back in, try incorrect credentials, open project setup and cancel authorization, connect the dedicated project account when available, refresh account offline/online, log in as another demo user, disconnect and reconnect cloud storage. Files remains a placeholder and is outside this change.
+
+Historical baseline: on 21 October 2026, the preceding OAuth-only version passed build, lint, 1 unit test and 3 instrumentation tests. Its login flow was observed opening the correct Dropbox authorization page; live account retrieval was not completed. Revised demo validation on 22 October 2026: Android Studio/Gradle `assembleDebug` passed; `testDebugUnitTest` passed 7/7 tests; connected instrumentation passed 5/5 tests on Pixel 6 API 34, including real UI registration/login/logout/setup navigation and preservation of project credentials during demo logout. These tests use synthetic local users and an in-memory HTTP transport; they do not prove live Dropbox account access. Lint for this revision remains a required check in the apply/update command.
