@@ -38,7 +38,8 @@
                 android:layout_height="wrap_content"
                 android:layout_marginTop="16dp"
                 android:gravity="center"
-                android:text="@string/login_demo_notice" />
+                android:id="@+id/login_status"
+                android:text="@string/login_notice" />
 
             <Button
                 android:id="@+id/button_continue"
@@ -46,7 +47,7 @@
                 android:layout_height="wrap_content"
                 android:layout_marginTop="24dp"
                 android:minHeight="48dp"
-                android:text="@string/login_demo_button" />
+                android:text="@string/login_button" />
 
         </LinearLayout>
 

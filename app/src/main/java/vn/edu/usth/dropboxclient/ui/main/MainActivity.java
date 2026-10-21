@@ -18,7 +18,7 @@ public class MainActivity extends AppCompatActivity {
 
     private static final String KEY_SELECTED_TAB = "selected_tab";
 
-    private int selectedTab = R.id.nav_files;
+    private int selectedTab = R.id.nav_account;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -47,7 +47,7 @@ public class MainActivity extends AppCompatActivity {
         if (savedInstanceState != null) {
             selectedTab = savedInstanceState.getInt(
                     KEY_SELECTED_TAB,
-                    R.id.nav_files
+                    R.id.nav_account
             );
         }
 

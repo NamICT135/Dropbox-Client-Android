@@ -8,4 +8,15 @@
     <string name="login_description">Manage your Dropbox files from Android.</string>
     <string name="login_demo_notice">Demo navigation only. Dropbox authentication is not connected.</string>
     <string name="login_demo_button">Continue to demo</string>
+    <string name="login_button">Sign in with Dropbox</string>
+    <string name="login_notice">Sign in securely to view your Dropbox account.</string>
+    <string name="auth_setup_required">Configure DROPBOX_APP_KEY in local.properties, then rebuild the app.</string>
+    <string name="auth_waiting">Waiting for Dropbox authorization…</string>
+    <string name="auth_cancelled">Authorization was cancelled or did not complete. Please try again.</string>
+    <string name="session_error">Unable to read or save your secure session. Please sign in again.</string>
+    <string name="account_loading">Loading account…</string>
+    <string name="account_error">Unable to load account. Check your connection and account_info.read permission, then retry.</string>
+    <string name="account_retry">Retry / Refresh</string>
+    <string name="logout">Log out</string>
+    <string name="account_details">Name: %1$s\n\nEmail: %2$s\n\nAccount ID: %3$s</string>
 </resources>

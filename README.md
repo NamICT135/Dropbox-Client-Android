@@ -4,14 +4,14 @@ Android group project for the Mobile Application Development course at USTH. The
 
 ## Project status and scope
 
-The project is currently in **Milestone 1: GitHub and Android skeleton**. The Java/XML skeleton is implemented and merged into `main`; Dropbox OAuth and all live API operations remain planned. Only Dropbox is in scope. Box, multiple providers and offline synchronization are excluded from the MVP. No custom backend, Firebase or Compose is planned.
+The project has a merged Java/XML skeleton. **Milestone 2: OAuth integration is implemented on the feature branch; live authorization acceptance is pending a Developer App key and user consent.** Only Dropbox is in scope. Box, multiple providers and offline synchronization are excluded from the MVP. No custom backend, Firebase or Compose is planned.
 
 ### Current implementation
 
 - Confirmed package and application ID: `vn.edu.usth.dropboxclient`.
-- `LoginActivity` is the launcher and contains a demo-only button that opens `MainActivity`.
+- `LoginActivity` launches Dropbox OAuth PKCE and restores an encrypted local session.
 - `MainActivity` hosts `FileBrowserFragment` and `AccountFragment` with working Files / Account navigation.
-- The two fragments currently show placeholder content; no Dropbox account or file data is loaded.
+- `AccountFragment` loads live account name, email and account ID through `DropboxRepository` on a background executor, with refresh and local logout. Files remains a placeholder.
 - The project builds and runs on a Pixel 6 emulator with Android 14 (API 34).
 - Local validation on 18 October 2026: `assembleDebug` passed, lint reported 0 errors and 6 warnings, and the generated unit test passed 1/1.
 
@@ -34,7 +34,7 @@ Milestone 1 remains open until another team member completes a clean clone, Grad
 - Java, XML, Android Studio, Activity, Fragment, Intent and Android resources. RecyclerView is planned for the file browser.
 - `minSdk` 26, `targetSdk` 36 and `compileSdk` 36.1.
 - Java 11 source compatibility; Gradle uses a Java 21 toolchain. Android Studio's bundled JBR 21 is the recommended build JDK.
-- Dropbox API v2 over HTTPS and the official Java/Android SDK are planned but not yet added. SDK objects will represent API responses; the presentation must still explain HTTP, JSON and OAuth.
+- Dropbox API v2 over HTTPS uses the official Java/Android SDK 8.0.2. SDK objects will represent API responses; the presentation must still explain HTTP, JSON and OAuth.
 - Simple layered design. Application logic stays small; do not create a controller class for every action without a need.
 - Background network/file I/O with an executor and delivery of UI updates on the main thread. Handle lifecycle changes and stale callbacks. AsyncTask is not the planned implementation.
 
@@ -47,7 +47,7 @@ flowchart TD
     CLIENT --> API[Dropbox API v2]
 ```
 
-Currently, `LoginActivity` provides demo navigation to `MainActivity`, which hosts `FileBrowserFragment` and `AccountFragment`. Milestone 2 will replace the demo action with Dropbox OAuth. Create, rename and delete will use dialogs. Upload/download will use system file pickers; separate upload/details/preview screens are not required for MVP.
+Currently, `LoginActivity` handles OAuth and opens `MainActivity` on the Account tab. `MainActivity` hosts `FileBrowserFragment` and `AccountFragment`. Create, rename and delete will use dialogs. Upload/download will use system file pickers; separate upload/details/preview screens are not required for MVP.
 
 ### Current structure
 
@@ -57,6 +57,8 @@ The package name is confirmed as `vn.edu.usth.dropboxclient`. The current source
 Dropbox-Client-Android/
 ├── app/src/main/
 │   ├── java/vn/edu/usth/dropboxclient/
+│   │   ├── auth/ (PKCE, client factory, encrypted session)
+│   │   ├── repository/DropboxRepository.java
 │   │   ├── ui/login/LoginActivity.java
 │   │   ├── ui/main/MainActivity.java
 │   │   ├── ui/files/FileBrowserFragment.java
@@ -78,7 +80,7 @@ Dropbox-Client-Android/
 └── .gitignore
 ```
 
-The `model`, `dropbox`, `storage` and `utils` packages will be created only when their implementations begin. Before parallel API work, agree on repository contracts for list, account, create, rename, delete, upload and download operations. Exact Java signatures, callback types and cancellation rules are still open. UI code must not scatter SDK calls across screens. One owner coordinates edits to the shared repository.
+The `model`, `dropbox`, `storage` and `utils` packages will be created only when their implementations begin. Before parallel API work, agree on repository contracts for list, account, create, rename, delete, upload and download operations. The account contract is `FullAccount getCurrentAccount() throws DbxException`; callers must use a background executor. Other operation signatures remain open. UI code must not scatter SDK calls across screens. One owner coordinates edits to the shared repository.
 
 ## Milestones and team
 
@@ -193,3 +195,18 @@ Names/handles, deadlines, license, Dropbox access type, exact Dropbox SDK versio
 ## Course references
 
 The supplied slides cover Android fundamentals, resources, background tasks, networking and touch input. Course Introduction identifies Dropbox/Box as a topic, requests initial GitHub instructions and meaningful commits, and supplies the presentation structure. Its slide says five students per group; this plan follows the requested six-person team, which should be confirmed with the lecturer. Modern implementation choices preserve the slide principles without copying legacy APIs blindly.
+
+## Milestone 2: local OAuth setup and acceptance
+
+1. Open https://www.dropbox.com/developers/apps and create a **Scoped access / App folder** app. Enable **account_info.read** under Permissions and Submit. Development accounts must be permitted by the app settings.
+2. Add `DROPBOX_APP_KEY=your_app_key` to the ignored root `local.properties` (preserve `sdk.dir`). Alternatively set the `DROPBOX_APP_KEY` environment variable. App key is public and embedded in the APK; App secret is never needed by PKCE. Never add tokens or App secret to source, configuration committed to Git, screenshots or logs.
+3. Sync/rebuild/install the app. The manifest callback scheme `db-<app key>` is generated from the same configuration. The SDK handles the browser redirect through `AuthActivity`; do not configure a localhost/web callback for this Android SDK flow.
+4. Sign in with Dropbox and grant consent. The Account tab should load real name, email and account ID. Cancel and retry authorization, rotate the screen, restart the app, disable networking and retry, then log out and relaunch. Revoke access in Dropbox settings and verify reauthentication. A missing app key allows builds but shows setup instructions instead of starting OAuth.
+
+Implementation: `auth/DropboxAuthManager` starts PKCE with only `account_info.read`; `auth/DropboxClientFactory` builds the SDK client from a `DbxCredential`; `auth/SessionManager` encrypts the credential JSON with AES-GCM and Android Keystore. Credential preferences are excluded from cloud backup and device transfer. Refresh tokens permit SDK access-token refresh on the background API thread. Session read/save and API calls use executors. Stale Fragment callbacks are ignored after view destruction or logout. SDK auth callbacks are consumed only after a login attempt; cancelled or interrupted flows can be retried.
+
+Logout clears the local session and task stack. It does not revoke Dropbox consent or sign out the device browser/official Dropbox app; revoke access from Dropbox Connected apps when required. There is no network token revocation during local logout. Account permission/network errors show Retry; invalid access tokens return to Login. The Files feature remains outside this milestone.
+
+Validation commands (Android Studio bundled JBR): `gradlew.bat assembleDebug testDebugUnitTest lintDebug`; with an emulator/device: `gradlew.bat connectedDebugAndroidTest`. Instrumentation checks encrypted session round-trip, logout persistence and corrupt-data reporting. Existing example tests are smoke checks only. Live OAuth, account API and refresh/revocation acceptance remain pending until a real App key and interactive consent are available.
+
+Validation on 21 October 2026: `assembleDebug`, `testDebugUnitTest`, `lintDebug`, and `connectedDebugAndroidTest` passed using JBR and Pixel 6 API 34. Unit test: 1 passed; instrumentation: 3 passed (2 secure-session tests plus the existing context smoke test). Lint: 0 errors, 12 warnings. Live Dropbox authorization/account retrieval is not yet verified.
