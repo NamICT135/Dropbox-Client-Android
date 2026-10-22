@@ -5,9 +5,10 @@ import android.content.Context;
 import android.net.Uri;
 
 import com.dropbox.core.DbxException;
+import com.dropbox.core.DbxDownloader;
 import com.dropbox.core.v2.DbxClientV2;
 import com.dropbox.core.v2.files.FileMetadata;
-import com.dropbox.core.v2.files.WriteMode;
+import vn.edu.usth.dropboxclient.repository.DropboxRepository;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -15,7 +16,7 @@ import java.io.OutputStream;
 
 public class DropboxTransferService {
 
-    private final DbxClientV2 client;
+    private final DropboxRepository repository;
     private final Context context;
 
     public DropboxTransferService(
@@ -29,7 +30,7 @@ public class DropboxTransferService {
         }
 
         this.context = context.getApplicationContext();
-        this.client = client;
+        this.repository = new DropboxRepository(client);
     }
 
     // Upload a local Android file to Dropbox
@@ -51,11 +52,7 @@ public class DropboxTransferService {
                              context, localFileUri
                      )) {
 
-            return client.files()
-                    .uploadBuilder(dropboxPath)
-                    .withMode(WriteMode.ADD)
-                    .withAutorename(true)
-                    .uploadAndFinish(inputStream);
+            return repository.uploadFile(dropboxPath, inputStream);
         }
     }
 
@@ -73,7 +70,9 @@ public class DropboxTransferService {
             );
         }
 
-        try (OutputStream outputStream =
+        // Check the server response before opening/truncating the destination.
+        try (DbxDownloader<FileMetadata> download = repository.openDownload(dropboxPath);
+             OutputStream outputStream =
                      context.getContentResolver()
                              .openOutputStream(destinationUri, "w")) {
 
@@ -83,9 +82,7 @@ public class DropboxTransferService {
                 );
             }
 
-            return client.files()
-                    .downloadBuilder(dropboxPath)
-                    .download(outputStream);
+            return download.download(outputStream);
         }
     }
 

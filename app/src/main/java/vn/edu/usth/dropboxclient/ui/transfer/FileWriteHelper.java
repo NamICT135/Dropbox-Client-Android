@@ -26,14 +26,7 @@ public class FileWriteHelper {
                 );
             }
 
-            byte[] buffer = new byte[8192];
-            int bytesRead;
-
-            while ((bytesRead = inputStream.read(buffer)) != -1) {
-                outputStream.write(buffer, 0, bytesRead);
-            }
-
-            outputStream.flush();
+            FileStreamHelper.copy(inputStream, outputStream);
         }
     }
 }

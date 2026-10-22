@@ -11,6 +11,7 @@ import java.security.GeneralSecurityException;
 
 import vn.edu.usth.dropboxclient.auth.SessionManager;
 import vn.edu.usth.dropboxclient.auth.DropboxClientFactory;
+import vn.edu.usth.dropboxclient.BuildConfig;
 
 public final class DropboxTransferFactory {
 
@@ -37,6 +38,9 @@ public final class DropboxTransferFactory {
             throw new IOException(
                     "Dropbox account is not connected"
             );
+        }
+        if (!BuildConfig.DROPBOX_APP_KEY.equals(credential.getAppKey())) {
+            throw new IOException("Reconnect Dropbox using this app configuration");
         }
 
         DbxClientV2 client =

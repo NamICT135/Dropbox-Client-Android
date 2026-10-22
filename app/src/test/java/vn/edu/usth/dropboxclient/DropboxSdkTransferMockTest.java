@@ -5,7 +5,7 @@ import com.dropbox.core.DbxRequestConfig;
 import com.dropbox.core.http.HttpRequestor;
 import com.dropbox.core.v2.DbxClientV2;
 import com.dropbox.core.v2.files.FileMetadata;
-import com.dropbox.core.v2.files.WriteMode;
+import vn.edu.usth.dropboxclient.repository.DropboxRepository;
 
 import org.junit.Test;
 
@@ -164,11 +164,7 @@ public class DropboxSdkTransferMockTest {
         try (InputStream input =
                      new ByteArrayInputStream(FILE_CONTENT)) {
 
-            FileMetadata result = client.files()
-                    .uploadBuilder(FILE_PATH)
-                    .withMode(WriteMode.ADD)
-                    .withAutorename(true)
-                    .uploadAndFinish(input);
+            FileMetadata result = new DropboxRepository(client).uploadFile(FILE_PATH, input);
 
             assertEquals(
                     "test.txt",
@@ -201,9 +197,11 @@ public class DropboxSdkTransferMockTest {
         ByteArrayOutputStream output =
                 new ByteArrayOutputStream();
 
-        FileMetadata result = client.files()
-                .downloadBuilder(FILE_PATH)
-                .download(output);
+        FileMetadata result;
+        try (com.dropbox.core.DbxDownloader<FileMetadata> download =
+                     new DropboxRepository(client).openDownload(FILE_PATH)) {
+            result = download.download(output);
+        }
 
         assertEquals(
                 "test.txt",

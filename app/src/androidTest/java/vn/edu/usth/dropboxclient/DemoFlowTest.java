@@ -108,6 +108,12 @@ public class DemoFlowTest {
             onView(withId(R.id.account_connect)).perform(scrollTo(), click());
             onView(withId(R.id.project_connect)).check(matches(withText(R.string.project_connect)));
             onView(withId(R.id.project_back)).perform(scrollTo(), click());
+            onView(withId(R.id.account_transfer_debug)).perform(scrollTo(), click());
+            onView(withId(R.id.transfer_upload)).check(matches(isDisplayed()));
+            onView(withId(R.id.transfer_path)).perform(replaceText("invalid_path"), closeSoftKeyboard());
+            onView(withId(R.id.transfer_download)).perform(scrollTo(), click());
+            onView(withId(R.id.transfer_result)).check(matches(withText(R.string.transfer_invalid_path)));
+            onView(withId(R.id.transfer_back)).perform(scrollTo(), click());
             onView(withId(R.id.account_logout)).perform(scrollTo(), click());
             awaitView(R.id.demo_username);
             onView(withId(R.id.demo_username)).check(matches(isDisplayed()));
