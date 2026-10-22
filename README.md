@@ -1,239 +1,63 @@
 # Dropbox Client Android
 
-Android group project for the Mobile Application Development course at USTH. The academic demo uses local username accounts and a shared project Dropbox connection to manage project cloud files using **Java and XML layouts**.
+USTH Mobile Application Development group project. The app is written in **Java with XML layouts** (`vn.edu.usth.dropboxclient`). It uses local demo usernames for the academic UI and a separate Dropbox connection for real API calls. Dropbox access is limited to the project's **App Folder**; Box and offline synchronization are outside the project scope.
 
-## Project status and scope
+## What the app does now
 
-The project has a merged Java/XML skeleton. **Milestone 2: local academic demo login plus a separate real Dropbox project connection.** Live API acceptance requires the dedicated project Dropbox account to authorize the demo device. Only Dropbox is in scope. Box, multiple providers and offline synchronization are excluded from the MVP. No custom backend, Firebase or Compose is planned.
+- Register and log in with a local demo username and password; no personal email is needed for this step. Demo logout does not disconnect project storage.
+- Connect a Dropbox account through **Account > Set up project storage**. The app verifies the account through `DropboxRepository.getCurrentAccount()` and shows the returned display name. **Disconnect project storage** removes the saved connection from that device.
+- In debug builds, open **Account > Test upload / download** to select a small local file and a download destination with Android's document pickers. The transfer service uses `DropboxRepository` for Dropbox API calls. The regular **Files** screen is still a placeholder.
 
-### Current implementation
+The Dropbox connection is shared by local demo users on the same device. A team member can build the app and develop the UI without the project's Dropbox email, password or token. A new device needs its own Dropbox authorization before it can call the real API.
 
-- Confirmed package and application ID: `vn.edu.usth.dropboxclient`.
-- `LoginActivity` registers and authenticates device-local demo users by username; personal email is not required. `ProjectDropboxActivity` handles one-time project-account OAuth setup separately.
-- `MainActivity` hosts `FileBrowserFragment` and `AccountFragment` with working Files / Account navigation.
-- `AccountFragment` shows the local demo username and the independent project-storage connection. When configured, it loads the Dropbox display name through `DropboxRepository` on a background executor. Demo logout preserves the Dropbox connection; a separate Disconnect action removes it. Files remains a placeholder.
-- The debug transfer screen uses the authorized project connection for small-file upload/download. On 22 October 2026, a Pixel 6 API 34 test passed real Dropbox account lookup, folder listing, upload and byte-for-byte download verification.
-- The project builds and runs on a Pixel 6 emulator with Android 14 (API 34).
-- Local validation on 18 October 2026: `assembleDebug` passed, lint reported 0 errors and 6 warnings, and the generated unit test passed 1/1.
+## Run the project
 
-Milestone 1 remains open until another team member completes a clean clone, Gradle sync, build and run.
+1. Clone the repository and open its root in Android Studio. Use Android Studio's bundled JBR 21 and install Android SDK 36.1. The app supports Android 8.0 (API 26) and later.
+2. Let Android Studio create the ignored `local.properties` file for your SDK path. Local demo login and unit tests work without a Dropbox App key.
+3. For real Dropbox access, add `DROPBOX_APP_KEY=your_app_key` to the root `local.properties` or set the environment variable, then rebuild. The App key is a public application identifier; never commit passwords, tokens or the App secret.
+4. Run the app on an emulator or device. Register a demo username (3-24 letters, digits or underscores) and a test password (8-128 characters). From Account, connect project storage and approve the Dropbox request.
+5. For transfer demonstrations, use **Account > Test upload / download** in a debug build. Start with a small disposable file. [Transfer acceptance and limitations](docs/transfer-review.md) explains the steps and test commands.
 
-## Feature priorities
-
-| Priority | Features | Acceptance criteria |
-|---|---|---|
-| MVP | Dropbox login, logout, account information | Authorize through Dropbox; show account; clear local session on logout |
-| MVP | File/folder browser, folder navigation, refresh | Browse root and nested folders; return to parent; handle pagination and empty folders |
-| MVP | Create folder, rename, delete | Validate names; show conflicts; confirm deletion; refresh after success |
-| MVP | Upload and download | Select a local file and destination using Android file pickers; verify uploaded/downloaded content |
-| MVP | Loading, empty and error states | No crash on cancellation, network failure or expired authorization; allow retry |
-| Optional after MVP | Search, shared links, image/PDF preview, transfer percentage, dark mode | Separate issues; implement only after MVP passes |
-| Out of MVP | Offline cache/sync, multi-provider support | No delivery commitment |
-
-## Technology and architecture
-
-- Java, XML, Android Studio, Activity, Fragment, Intent and Android resources. RecyclerView is planned for the file browser.
-- `minSdk` 26, `targetSdk` 36 and `compileSdk` 36.1.
-- Java 11 source compatibility; Gradle uses a Java 21 toolchain. Android Studio's bundled JBR 21 is the recommended build JDK.
-- Dropbox API v2 over HTTPS uses the official Java/Android SDK 8.0.2. SDK objects will represent API responses; the presentation must still explain HTTP, JSON and OAuth.
-- Simple layered design. Application logic stays small; do not create a controller class for every action without a need.
-- Background network/file I/O with an executor and delivery of UI updates on the main thread. Handle lifecycle changes and stale callbacks. AsyncTask is not the planned implementation.
-
-```mermaid
-flowchart TD
-    UI[Activities and Fragments with XML] --> LOGIC[Application logic]
-    LOGIC --> REPO[DropboxRepository]
-    REPO --> CLIENT[Dropbox client and OAuth]
-    REPO --> SESSION[SessionManager]
-    CLIENT --> API[Dropbox API v2]
-```
-
-Currently, `LoginActivity` handles local demo login and opens `MainActivity` on the Account tab. OAuth is accessed through Set up project storage, not user login. `MainActivity` hosts `FileBrowserFragment` and `AccountFragment`. Create, rename and delete will use dialogs. Upload/download will use system file pickers; separate upload/details/preview screens are not required for MVP.
-
-### Current structure
-
-The package name is confirmed as `vn.edu.usth.dropboxclient`. The current source structure is:
-
-```text
-Dropbox-Client-Android/
-â”œâ”€â”€ app/src/main/
-â”‚   â”œâ”€â”€ java/vn/edu/usth/dropboxclient/
-â”‚   â”‚   â”œâ”€â”€ auth/ (PKCE, client factory, encrypted session)
-â”‚   â”‚   â”œâ”€â”€ repository/DropboxRepository.java
-â”‚   â”‚   â”œâ”€â”€ ui/login/LoginActivity.java
-â”‚   â”‚   â”œâ”€â”€ ui/main/MainActivity.java
-â”‚   â”‚   â”œâ”€â”€ ui/files/FileBrowserFragment.java
-â”‚   â”‚   â”œâ”€â”€ ui/account/AccountFragment.java
-â”‚   â”œâ”€â”€ res/
-â”‚   â”‚   â”œâ”€â”€ layout/activity_login.xml
-â”‚   â”‚   â”œâ”€â”€ layout/activity_main.xml
-â”‚   â”‚   â”œâ”€â”€ layout/fragment_file_browser.xml
-â”‚   â”‚   â”œâ”€â”€ layout/fragment_account.xml
-â”‚   â”‚   â”œâ”€â”€ drawable/
-â”‚   â”‚   â”œâ”€â”€ mipmap/
-â”‚   â”‚   â”œâ”€â”€ values/
-â”‚   â”‚   â””â”€â”€ xml/
-â”‚   â””â”€â”€ AndroidManifest.xml
-â”œâ”€â”€ gradle/wrapper/
-â”œâ”€â”€ gradlew
-â”œâ”€â”€ gradlew.bat
-â”œâ”€â”€ README.md
-â””â”€â”€ .gitignore
-```
-
-The `model`, `dropbox`, `storage` and `utils` packages will be created only when their implementations begin. Before parallel API work, agree on repository contracts for list, account, create, rename, delete, upload and download operations. The account contract is `FullAccount getCurrentAccount() throws DbxException`; callers must use a background executor. Other operation signatures remain open. UI code must not scatter SDK calls across screens. One owner coordinates edits to the shared repository.
-
-## Milestones and team
-
-Milestones are completion gates, not calendar deadlines. There are nine gates M0â€“M8.
-
-| Gate | Deliverable | Completion evidence |
-|---|---|---|
-| M0 | Scope and roles | MVP, owners and open decisions recorded |
-| M1 | GitHub and Android skeleton | Clean clone builds/runs; contracts and toolchain agreed |
-| M2 | Dropbox configuration and OAuth | Login, account, cancellation and logout verified |
-| M3 | File browser | Root, nested/empty folders, back navigation, pagination verified |
-| M4 | File operations | Create, rename, conflict handling and confirmed delete verified |
-| M5 | Transfers | Small-file upload/download and failure recovery verified |
-| M6 | Integration and UI | Complete flows; loading/error/empty states; lifecycle handling |
-| M7 | Testing | Test matrix and regression results recorded; critical bugs fixed |
-| M8 | Documentation and demo | README, architecture, slides and rehearsed demo match the app |
-
-| Member placeholder | Technical ownership | Review partner |
-|---|---|---|
-| 1 | Skeleton, navigation, contracts and integration | 3 |
-| 2 | OAuth, account data and session | 6 |
-| 3 | RecyclerView, pagination and folder navigation | 1 |
-| 4 | Upload/download, file URI handling and transfer errors | 5 |
-| 5 | Create/rename/delete and validation | 4 |
-| 6 | Account UI, shared UI states and regression support | 2 |
-
-Replace placeholders with names/GitHub handles at M0. All members write code, test their module, review PRs and contribute to README/slides. After M1, members can use mocks against agreed contracts while OAuth is being implemented; live integration depends on M2. Optional preview remains optional for Member 6.
-
-## API configuration
-
-1. Create a scoped app in the [Dropbox App Console](https://www.dropbox.com/developers/apps). The project uses **App Folder** for an isolated academic demo. Use the dedicated project account; file paths are relative to the app folder.
-2. Enable only required scopes: `account_info.read`, `files.metadata.read`, `files.content.read`, `files.content.write`. Add sharing scopes only if shared links are approved. Reauthorize after scope changes as required.
-3. Use OAuth 2.0 authorization code flow with PKCE. Do not embed an app secret or use a manually generated personal token as the application's login flow.
-4. Proposed local configuration in ignored `local.properties`: `DROPBOX_APP_KEY=YOUR_APP_KEY`. Member 1 must implement Gradle property loading and pass the value to the SDK and OAuth manifest callback configuration. A property alone does not configure the app. The app key is a public client identifier, not a secret.
-5. Add `android.permission.INTERNET`. Configure the SDK OAuth Activity/redirect intent filter exactly as required by the selected SDK; ensure scheme/redirect registration matches. Test return from browser/Dropbox authorization, cancellation and activity recreation. Do not guess a universal callback URI.
-6. Define session persistence and refresh policy before M2. If refresh credentials are required, request the appropriate offline authorization and securely persist them. Clear credentials and in-memory clients on logout; document whether account access is also revoked.
-7. Pin a compatible SDK version after checking JDK, AGP, Gradle and minSdk. The official SDK currently documents v8 as Java 21+ and Android API 26+, and directs Java 8â€“20 projects to compatible 7.x. It requires SDK v7+ for server compatibility. Do not copy old tutorial versions or use a dynamic version.
-
-Source: [official SDK setup](https://github.com/dropbox/dropbox-sdk-java), [OAuth guide](https://docs.dropboxapi.com/dropbox-api/docs/oauth), [file access guide](https://docs.dropboxapi.com/dropbox-api/docs/file-access). Recheck compatibility when selecting the dependency.
-
-## Setup and running
-
-Requirements:
-
-- Android Studio with Android SDK 36.1 installed.
-- JDK 21 for Gradle. The JBR bundled with Android Studio is recommended.
-- Android emulator or physical device running Android 8.0 (API 26) or later.
-
-1. Clone the repository:
-
-   ```powershell
-   git clone https://github.com/NamICT135/Dropbox-Client-Android.git
-   ```
-
-2. Open the cloned repository root in Android Studio and wait for Gradle sync.
-3. Allow Android Studio to create the machine-specific, ignored `local.properties` file.
-4. Select a compatible emulator or device and run the `app` configuration.
-5. Verify the current demo flow: Login screen â†’ Continue to demo â†’ Files / Account navigation.
-
-Dropbox configuration is not required for the current skeleton. Do not paste tokens or credentials into source files.
-
-Use the committed Gradle wrapper. On Windows, run:
+On Windows, run the build and local tests with:
 
 ```powershell
-.\gradlew.bat assembleDebug lintDebug testDebugUnitTest
-.\gradlew.bat connectedDebugAndroidTest
+.\gradlew.bat assembleDebug assembleDebugAndroidTest testDebugUnitTest lintDebug
 ```
 
-The first line was verified locally on 18 October 2026. `connectedDebugAndroidTest` still requires a running device/emulator and configured instrumentation tests. A successful build does not establish live OAuth/API correctness.
+The Dropbox Developer App needs `account_info.read`, `files.metadata.read`, `files.content.read` and `files.content.write`. After changing scopes, authorize again in the app. The project uses OAuth 2.0 with PKCE and Dropbox SDK 8.0.2; `app/build.gradle.kts` configures the callback scheme from the App key. See the [Dropbox OAuth guide](https://docs.dropboxapi.com/dropbox-api/docs/oauth) and [SDK repository](https://github.com/dropbox/dropbox-sdk-java).
 
-## Git and GitHub workflow
+## How it is organized
 
-- Invite the other five members as collaborators; use Issues with owner, acceptance criteria and milestone. Track To do â†’ In progress â†’ Review â†’ Done.
-- Keep `main` stable. Work on `feature/auth`, `feature/file-browser`, `feature/upload-download`, `feature/file-operations`, `feature/account`, or `feature/ui-testing`; use `fix/...` for focused fixes.
-- Update from `main`, implement a small task, inspect the diff, commit and push your branch, then open a PR. Require a peer review and relevant build/test evidence before merging. Enable branch protection where available; do not push directly to `main`.
-- PRs describe behavior, screenshots for UI changes, test evidence and known limits. Coordinate shared files such as Gradle, Manifest, navigation and DropboxRepository with their owners.
-- Use clear messages such as `feat: paginate Dropbox folders`, `fix: handle cancelled login`, `docs: explain OAuth setup`. Avoid messages such as `update` or `done`.
-- Commit wrapper files. Ignore local.properties, build output, tokens, keystores and personal credentials. Never force push shared branches or rewrite shared history.
+- `DemoAuthManager` handles local usernames and password verification. Passwords are salted and hashed with PBKDF2-HMAC-SHA256; demo login is for coursework, not a production identity service.
+- `DropboxAuthManager` starts OAuth. `SessionManager` encrypts the Dropbox credential with AES-GCM and Android Keystore; backup rules exclude the demo and Dropbox preferences.
+- `DropboxClientFactory` creates `DbxClientV2`. `DropboxRepository` owns account and transfer API calls. `DropboxTransferService` handles Android URI streams, and `TransferTestActivity` provides the debug UI.
+- Account requests, provider queries and transfers run on worker executors. UI updates return to the main thread.
 
-## Technical and security rules
+## Verified on 22 October 2026
 
-- No network or heavy file I/O on the main thread; update views only on the main thread. Cancel or ignore stale results when screens change; preserve current folder on rotation.
-- Follow `has_more` and cursor continuation; handle rate limits with bounded backoff and actionable errors. Do not blindly retry destructive operations after an uncertain result; refresh first.
-- Use Storage Access Framework and ContentResolver streams, not assumed filesystem paths from content URIs. Close streams and avoid reading whole files into memory. Do not request broad storage access for the MVP.
-- Start with small demo files. Decide and document a supported size limit at M1; reject oversized input clearly. Large upload sessions, persistent background transfers and process-death recovery are not committed MVP features.
-- Validate names and conflicts; confirm delete. Disable duplicate submissions. Do not silently overwrite files.
-- Keep strings/dimensions/colors in resources. Handle loading, empty and error states consistently.
-- Never commit/log access tokens, refresh tokens, app secrets, passwords or authorization responses. Keep persisted credentials in app-private encrypted storage with keys protected by Android Keystore; exclude credential material from backup. Exact storage implementation is TBD at M2.
-- Use HTTPS; never disable certificate checks. Use disposable demo data. If credentials leak, revoke/rotate them immediately; deleting a file in a later commit does not remove the leak.
+- [x] Build and both debug APK packages completed; lint reported **0 errors, 8 warnings**.
+- [x] **14/14 unit tests** passed.
+- [x] On Pixel 6 API 34, **12 isolated device tests** passed. Two live tests were intentionally skipped in that normal run.
+- [x] Local demo registration/login/logout and Files / Account navigation were exercised on the emulator.
+- [x] Dropbox OAuth returned to the app and Account showed the real connected account.
+- [x] The opt-in live test passed **1/1**: account lookup, App Folder listing, upload of a small synthetic file, download and exact byte comparison.
+- [x] An isolated device test confirmed that a rejected download does not truncate an existing local destination.
 
-## Testing and demo checklist
+The isolated tests use local fixtures or an in-memory HTTP transport; the opt-in test above is the evidence for real Dropbox API access. See [transfer test details](docs/transfer-review.md). Do not run Gradle's `connectedDebugAndroidTest` on the authorized demo device: its cleanup was observed uninstalling the app. The linked guide shows how to run instrumentation directly while preserving the connection.
 
-Every module owner records expected/actual result, device/API level and evidence. Unit-test meaningful pure logic (paths, validation, error mapping); test UI/lifecycle and live API integration separately.
+## Still to complete
 
-- [x] Local Gradle sync and `assembleDebug` complete successfully.
-- [x] Lint completes with 0 errors and 6 non-blocking warnings.
-- [x] Current unit test passes 1/1.
-- [x] Login demo and Files / Account navigation run on Pixel 6 API 34.
-- [ ] Clean clone, configuration and Gradle sync work on a second member's machine.
-- [ ] Login success/cancel, expired authorization/refresh, logout and relaunch behave correctly.
-- [ ] Root, nested and empty folders; back navigation; pagination and Vietnamese filenames work.
-- [ ] Create/rename/delete, name conflicts and delete cancellation work on test data.
-- [ ] Upload/download contents are correct; picker cancellation and transfer failures are handled.
-- [ ] No Internet, rate limits, rapid taps and screen rotation produce no crash or stale UI.
-- [ ] Full MVP build/lint/tests pass; final emulator demo is rehearsed; no credentials appear in logs/slides/repo.
-- [ ] Presentation follows Introduction â†’ Architecture â†’ Activities â†’ Networking â†’ Optimization â†’ Demo â†’ Conclusion. Course slides specify 15 minutes plus 3 minutes Q&A; demonstrate actual optimization evidence such as UI overdraw rather than claiming unmeasured performance gains.
+- [ ] A second team member performs a clean clone, Gradle sync, build and run.
+- [ ] OAuth cancellation, revoked/expired authorization, token refresh and disconnect/reconnect are checked end to end on a device.
+- [ ] The debug transfer screen is checked manually with both document pickers, cancellation, offline failure and retry. The live API test does not cover every picker interaction.
+- [ ] The regular Files screen browses root and nested folders, handles empty folders, back navigation, pagination and Vietnamese filenames.
+- [ ] Create folder, rename and delete screens handle validation, conflicts and cancellation.
+- [ ] Rapid taps, rate limits, rotation during active work and process restart receive full regression checks.
+- [ ] The full MVP is integrated, the final demo is rehearsed and the presentation is complete.
+- [ ] Confirm the team's member count and assign named owners; the course slide and six-person working plan differ. Decide the repository license.
 
-## Decisions still open
+The transfer screen is a **foreground, small-file academic demo**. Large upload sessions, background transfer recovery, progress percentages and in-flight cancellation are not implemented. A network failure after download begins can leave a partial local destination. General file browsing and file operations are separate team tasks.
 
-Names/handles, deadlines, license and supported transfer size remain open. This implementation uses Scoped App Folder, SDK 8.0.2, PKCE and Android Keystore credential storage. The authorized demo device passed live account lookup and a small-file transfer round trip on 22 October 2026. MVP file operations remain planned.
+## Team workflow
 
-## Course references
-
-The supplied slides cover Android fundamentals, resources, background tasks, networking and touch input. Course Introduction identifies Dropbox/Box as a topic, requests initial GitHub instructions and meaningful commits, and supplies the presentation structure. Its slide says five students per group; this plan follows the requested six-person team, which should be confirmed with the lecturer. Modern implementation choices preserve the slide principles without copying legacy APIs blindly.
-
-## Milestone 2: academic demo login and real project storage
-
-Team members do not need the project's Dropbox email, password or token to build, develop the UI or run unit tests. See [Team development without shared credentials](docs/team-development.md) for setup and the optional live API acceptance check. A fresh clone starts without a cloud connection; the presenter authorizes the project storage on the demo device.
-
-These are two independent sessions:
-
-- **Demo users:** register/log in locally with a username (3-24 letters, digits or underscores) and a test password (8-128 characters). No email, email verification or Dropbox account is required. Usernames are case-insensitive. Registration signs in immediately. The local session survives app restarts; Log out of demo clears only that session. Passwords use PBKDF2-HMAC-SHA256 (120,000 iterations) with a fresh 16-byte salt per account; plaintext passwords are not saved. Use disposable test passwords. This is an academic local login, not a production identity service.
-- **Project storage:** a group member authorizes one dedicated project Dropbox account on each demo device through Account > Set up project storage. All local demo users share this cloud storage. Demo credentials do not authorize Dropbox and do not provide per-user cloud isolation. The app does not fabricate successful API responses when storage is disconnected.
-
-`DemoAuthManager` owns local accounts/session. Existing `SessionManager` stores only the project `DbxCredential`, encrypted with AES-GCM/Android Keystore. Both preference files are excluded from cloud backup and device transfer. `DropboxClientFactory` builds `DbxClientV2`; `DropboxRepository.getCurrentAccount()` still calls the real Dropbox API. Password derivation, token persistence and API calls run on worker executors; stale view callbacks are discarded. The main screen and setup Activity require a demo session.
-
-### Setup
-
-1. Use an email and Dropbox account specifically for the project on the demo device. Personal email/accounts are not needed from demo participants or from members doing local development. The existing Developer App has additional development users enabled; each account must still grant its own consent. Live account retrieval must be verified after authorizing the project account on the device.
-2. Register a Scoped access / App folder Developer App at https://www.dropbox.com/developers/apps, or use the existing project app. Enable `account_info.read`, `files.metadata.read`, `files.content.read`, `files.content.write`; allow public clients/PKCE. Existing grants must complete OAuth again to receive the added scopes. Ordinary create/rename/delete operations use `files.content.write`, not `files.metadata.write`.
-3. Set `DROPBOX_APP_KEY=your_app_key` in ignored root `local.properties` (preserve `sdk.dir`), or set the environment variable. App key is public; no App secret or token belongs in Git, APK source, logs or screenshots. Rebuild. The matching `db-<app key>` callback scheme is generated automatically for SDK `AuthActivity`.
-4. Register/log in with a demo username. The account screen works without a Dropbox connection and reports that storage is not connected.
-5. Choose **Set up project storage > Connect project Dropbox**, then a group member signs in with the dedicated project account and grants consent. `getCurrentAccount()` verifies the credential before it is saved. Return to Account to see the real Dropbox connection. Setup does not ask demo participants to sign in with personal email.
-6. Log out of demo and register another username: the project connection remains. **Disconnect project storage** is a separate confirmed action affecting every demo user on this device; it removes only the local cloud credential, not accounts or files. Revoke Dropbox consent in Dropbox settings if needed. A local demo account is not an administrator boundary; setup is intended for supervised academic devices.
-
-If authorization is cancelled or the network fails, retry from setup; an existing project connection is not replaced on failure. Invalid access tokens produce a reconnect state without signing out the demo user. The SDK uses refresh tokens for access-token refresh. If access is revoked, credentials become unreadable or app configuration changes, setup may be required again. Demo logout does not sign out the browser, revoke Dropbox consent or delete project files.
-
-### Verification
-
-Build/check: `gradlew.bat assembleDebug testDebugUnitTest lintDebug`. Normal device checks: `gradlew.bat connectedDebugAndroidTest` with a single disposable, unconnected emulator/device. This Gradle runner can uninstall the app after tests. For the authorized demo device, follow the direct instrumentation instructions in [the team guide](docs/team-development.md#repeat-the-live-account-acceptance-check) to preserve its connection.
-
-Unit tests cover local registration/login/session restore, duplicate usernames, wrong credentials, salted password hashing, storage failure, and SDK account-response parsing/error propagation using an in-memory HTTP transport. These transport tests do not prove live Dropbox access. Instrumentation uses isolated test preferences and checks encrypted credentials, corruption handling, and that demo logout preserves project credentials.
-
-Manual acceptance: register without email, rotate/relaunch, log out and log back in, try incorrect credentials, open project setup and cancel authorization, connect the dedicated project account when available, refresh account offline/online, log in as another demo user, disconnect and reconnect cloud storage. Files remains a placeholder and is outside this change.
-
-Demo form fix verified on 22 October 2026: failed attempts retain the entered password so a corrected username or switching from duplicate registration to login works without retyping it. Length/required-field errors appear beside the input; password text is cleared on successful navigation or Activity destruction and remains excluded from saved state. A new UI regression test reproduced the old loss of password input before the fix, then passed afterward. Build, 7 unit tests and lint (0 errors, 8 warnings) passed; device results were 6 passed and 1 intentionally skipped live-API test on Pixel 6 API 34.
-
-Historical baseline: on 21 October 2026, the preceding OAuth-only version passed build, lint, 1 unit test and 3 instrumentation tests. Its login flow was observed opening the correct Dropbox authorization page; live account retrieval was not completed. Revised demo validation on 22 October 2026: Android Studio/Gradle `assembleDebug` passed; `testDebugUnitTest` passed 7/7 tests; connected instrumentation passed 5/5 tests on Pixel 6 API 34, including real UI registration/login/logout/setup navigation and preservation of project credentials during demo logout. These tests use synthetic local users and an in-memory HTTP transport; they do not prove live Dropbox account access. Lint for this revision passed with 0 errors and 8 non-blocking warnings.
-
-
-## Upload/download integration
-
-The debug build exposes **Account > Test upload / download**. Android document pickers provide upload input and download destination streams; `DropboxTransferService` handles Android URI I/O and delegates cloud calls to `DropboxRepository`. The shared encrypted project connection is reused. No new login system, backend or dependencies are introduced. The transfer screen uses Java/XML and resource strings.
-
-See [Transfer acceptance and limitations](docs/transfer-review.md) for permission renewal, how to run the screen and the live test. The file browser and general create/rename/delete UI remain separate module work.
+Keep `main` stable. Each member works on a feature branch, commits focused changes, pushes and opens a pull request into `main`. Review **Files changed**, run the relevant checks and obtain a teammate's approval before merging. Never share Dropbox credentials through Git or chat. [Team development without shared credentials](docs/team-development.md) explains how to work with mock responses and how to repeat a live check on an authorized device.
