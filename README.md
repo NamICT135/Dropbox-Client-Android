@@ -198,6 +198,8 @@ The supplied slides cover Android fundamentals, resources, background tasks, net
 
 ## Milestone 2: academic demo login and real project storage
 
+Team members do not need the project's Dropbox email, password or token to build, develop the UI or run unit tests. See [Team development without shared credentials](docs/team-development.md) for setup and the optional live API acceptance check. A fresh clone starts without a cloud connection; the presenter authorizes the project storage on the demo device.
+
 These are two independent sessions:
 
 - **Demo users:** register/log in locally with a username (3-24 letters, digits or underscores) and a test password (8-128 characters). No email, email verification or Dropbox account is required. Usernames are case-insensitive. Registration signs in immediately. The local session survives app restarts; Log out of demo clears only that session. Passwords use PBKDF2-HMAC-SHA256 (120,000 iterations) with a fresh 16-byte salt per account; plaintext passwords are not saved. Use disposable test passwords. This is an academic local login, not a production identity service.
@@ -207,7 +209,7 @@ These are two independent sessions:
 
 ### Setup
 
-1. Create an email and Dropbox account specifically for the project. Personal email/accounts are not needed from demo participants. The developer app currently allows only its owner; if the project Dropbox account differs from the developer-app owner, permit development users in App Console before authorizing it. The group does **not** yet have the dedicated account, so live account retrieval is not verified.
+1. Use an email and Dropbox account specifically for the project on the demo device. Personal email/accounts are not needed from demo participants or from members doing local development. The existing Developer App has additional development users enabled; each account must still grant its own consent. Live account retrieval must be verified after authorizing the project account on the device.
 2. Register a Scoped access / App folder Developer App at https://www.dropbox.com/developers/apps, or use the existing project app. Enable `account_info.read`; allow public clients/PKCE. This milestone requests only account scope. File operations will need their matching scopes in a later milestone.
 3. Set `DROPBOX_APP_KEY=your_app_key` in ignored root `local.properties` (preserve `sdk.dir`), or set the environment variable. App key is public; no App secret or token belongs in Git, APK source, logs or screenshots. Rebuild. The matching `db-<app key>` callback scheme is generated automatically for SDK `AuthActivity`.
 4. Register/log in with a demo username. The account screen works without a Dropbox connection and reports that storage is not connected.
