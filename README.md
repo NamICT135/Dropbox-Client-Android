@@ -12,6 +12,7 @@ The project has a merged Java/XML skeleton. **Milestone 2: local academic demo l
 - `LoginActivity` registers and authenticates device-local demo users by username; personal email is not required. `ProjectDropboxActivity` handles one-time project-account OAuth setup separately.
 - `MainActivity` hosts `FileBrowserFragment` and `AccountFragment` with working Files / Account navigation.
 - `AccountFragment` shows the local demo username and the independent project-storage connection. When configured, it loads the Dropbox display name through `DropboxRepository` on a background executor. Demo logout preserves the Dropbox connection; a separate Disconnect action removes it. Files remains a placeholder.
+- The debug transfer screen uses the authorized project connection for small-file upload/download. On 22 October 2026, a Pixel 6 API 34 test passed real Dropbox account lookup, folder listing, upload and byte-for-byte download verification.
 - The project builds and runs on a Pixel 6 emulator with Android 14 (API 34).
 - Local validation on 18 October 2026: `assembleDebug` passed, lint reported 0 errors and 6 warnings, and the generated unit test passed 1/1.
 
@@ -190,7 +191,7 @@ Every module owner records expected/actual result, device/API level and evidence
 
 ## Decisions still open
 
-Names/handles, deadlines, license and supported transfer size remain open. This implementation uses Scoped App Folder, SDK 8.0.2, PKCE and Android Keystore credential storage. The account repository calls the real Dropbox API; live acceptance is pending a dedicated project account. MVP file operations remain planned.
+Names/handles, deadlines, license and supported transfer size remain open. This implementation uses Scoped App Folder, SDK 8.0.2, PKCE and Android Keystore credential storage. The authorized demo device passed live account lookup and a small-file transfer round trip on 22 October 2026. MVP file operations remain planned.
 
 ## Course references
 
@@ -235,4 +236,4 @@ Historical baseline: on 21 October 2026, the preceding OAuth-only version passed
 
 The debug build exposes **Account > Test upload / download**. Android document pickers provide upload input and download destination streams; `DropboxTransferService` handles Android URI I/O and delegates cloud calls to `DropboxRepository`. The shared encrypted project connection is reused. No new login system, backend or dependencies are introduced. The transfer screen uses Java/XML and resource strings.
 
-See [Transfer acceptance and limitations](docs/transfer-review.md) for permission renewal, how to run the screen and the optional live test. The file browser and general create/rename/delete UI remain separate module work.
+See [Transfer acceptance and limitations](docs/transfer-review.md) for permission renewal, how to run the screen and the live test. The file browser and general create/rename/delete UI remain separate module work.
