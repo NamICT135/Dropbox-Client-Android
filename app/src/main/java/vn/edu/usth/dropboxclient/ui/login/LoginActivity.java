@@ -47,10 +47,23 @@ public class LoginActivity extends AppCompatActivity {
 
     private void authenticate(boolean register) {
         if (busy) return;
+        username.setError(null);
+        password.setError(null);
         String user = username.getText().toString();
+        if (user.trim().isEmpty()) {
+            username.setError(getString(R.string.demo_invalid_username));
+            status.setText(R.string.demo_invalid_username);
+            username.requestFocus();
+            return;
+        }
+        if (password.length() < 8 || password.length() > 128) {
+            password.setError(getString(R.string.demo_invalid_password));
+            status.setText(R.string.demo_invalid_password);
+            password.requestFocus();
+            return;
+        }
         char[] secret = new char[password.length()];
         password.getText().getChars(0, password.length(), secret, 0);
-        password.getText().clear();
         busy = true;
         setButtonsEnabled(false);
         status.setText(R.string.demo_working);
@@ -76,7 +89,17 @@ public class LoginActivity extends AppCompatActivity {
                 if (isDestroyed() || isFinishing()) return;
                 busy = false;
                 setButtonsEnabled(true);
-                if (ready) openMain(); else status.setText(text);
+                if (ready) {
+                    openMain();
+                } else {
+                    status.setText(text);
+                    if (text == R.string.demo_invalid_username || text == R.string.demo_user_exists) {
+                        username.setError(getString(text));
+                    } else if (text == R.string.demo_invalid_password
+                            || text == R.string.demo_invalid_credentials) {
+                        password.setError(getString(text));
+                    }
+                }
             });
         });
     }
@@ -87,9 +110,14 @@ public class LoginActivity extends AppCompatActivity {
         password.setEnabled(enabled);
     }
     private void openMain() {
+        if (password != null) password.getText().clear();
         startActivity(new Intent(this, MainActivity.class)
                 .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK));
         finish();
     }
-    @Override protected void onDestroy() { io.shutdown(); super.onDestroy(); }
+    @Override protected void onDestroy() {
+        if (password != null) password.getText().clear();
+        io.shutdown();
+        super.onDestroy();
+    }
 }
