@@ -220,7 +220,7 @@ If authorization is cancelled or the network fails, retry from setup; an existin
 
 ### Verification
 
-Build/check: `gradlew.bat assembleDebug testDebugUnitTest lintDebug`. Device checks: `gradlew.bat connectedDebugAndroidTest` with a single emulator/device.
+Build/check: `gradlew.bat assembleDebug testDebugUnitTest lintDebug`. Normal device checks: `gradlew.bat connectedDebugAndroidTest` with a single disposable, unconnected emulator/device. This Gradle runner can uninstall the app after tests. For the authorized demo device, follow the direct instrumentation instructions in [the team guide](docs/team-development.md#repeat-the-live-account-acceptance-check) to preserve its connection.
 
 Unit tests cover local registration/login/session restore, duplicate usernames, wrong credentials, salted password hashing, storage failure, and SDK account-response parsing/error propagation using an in-memory HTTP transport. These transport tests do not prove live Dropbox access. Instrumentation uses isolated test preferences and checks encrypted credentials, corruption handling, and that demo logout preserves project credentials.
 

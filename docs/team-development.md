@@ -22,12 +22,17 @@ There is no automatic cloud connection on a freshly cloned computer. Encrypted d
 
 ## Repeat the live account acceptance check
 
-After connecting the project account in the app, run this only against the intended demo emulator/device:
+After connecting the project account in the app, run this only against the intended demo emulator/device. Build the packages, install them as updates, and invoke the instrumentation runner directly so Gradle's connected-test cleanup cannot uninstall the authorized app:
 
 ```text
-gradlew.bat connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=vn.edu.usth.dropboxclient.LiveDropboxAccountTest -Pandroid.testInstrumentationRunnerArguments.liveDropbox=true
+gradlew.bat assembleDebug assembleDebugAndroidTest
+adb -s emulator-5554 install -r app\build\outputs\apk\debug\app-debug.apk
+adb -s emulator-5554 install -r app\build\outputs\apk\androidTest\debug\app-debug-androidTest.apk
+adb -s emulator-5554 shell am instrument -w -e class vn.edu.usth.dropboxclient.LiveDropboxAccountTest -e liveDropbox true vn.edu.usth.dropboxclient.test/androidx.test.runner.AndroidJUnitRunner
 ```
 
 `LiveDropboxAccountTest` reads the encrypted device session and calls `DropboxRepository.getCurrentAccount()` against Dropbox. It asserts that the server returns an account ID and display name. It never prints these values or tokens, writes/deletes cloud files, changes demo users, or clears the project connection. Without the explicit `liveDropbox=true` argument it is skipped, so the normal test suite requires no Dropbox account.
+
+Replace `emulator-5554` with the intended serial from `adb devices`. Use matching project configuration and the same debug signing key when updating an installed demo app. Run the ordinary `connectedDebugAndroidTest` suite on a disposable, unconnected emulator: the Gradle device runner was observed uninstalling the app after tests, so it must not be used to preserve a real project connection.
 
 For presentation, refresh Account and explain the route `AccountFragment -> DropboxRepository -> DbxClientV2 -> Dropbox API`; API work runs on a worker thread and the UI updates on the main thread. Distinguish this read-account result from future file operations.
