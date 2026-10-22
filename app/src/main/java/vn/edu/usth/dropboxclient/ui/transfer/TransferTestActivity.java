@@ -6,6 +6,7 @@ import android.content.Intent;
 import android.net.Uri;
 import android.os.Bundle;
 import android.widget.Button;
+import android.widget.EditText;
 import android.widget.LinearLayout;
 import android.widget.ScrollView;
 import android.widget.TextView;
@@ -14,64 +15,115 @@ import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.appcompat.app.AppCompatActivity;
 
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.nio.charset.StandardCharsets;
+import com.dropbox.core.v2.files.FileMetadata;
+
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 public class TransferTestActivity extends AppCompatActivity {
 
     private TextView resultText;
+    private EditText dropboxPathInput;
+    private Button uploadButton;
+    private Button downloadButton;
 
     private final ExecutorService executor =
             Executors.newSingleThreadExecutor();
 
-    // File Picker for Upload
     private final ActivityResultLauncher<Intent> uploadLauncher =
             registerForActivityResult(
                     new ActivityResultContracts.StartActivityForResult(),
                     result -> {
                         if (result.getResultCode() != Activity.RESULT_OK
-                                || result.getData() == null) {
-                            resultText.setText("File selection cancelled");
+                                || result.getData() == null
+                                || result.getData().getData() == null) {
+                            showResult("Upload selection cancelled");
                             return;
                         }
 
-                        Uri fileUri = result.getData().getData();
+                        Uri uri = result.getData().getData();
+                        String fileName = FileInfoHelper.getFileName(this, uri);
 
-                        if (fileUri == null) {
-                            resultText.setText("Invalid file URI");
-                            return;
-                        }
+                        // Use a dedicated test folder on Dropbox
+                        String dropboxPath = "/test_upload_" + fileName;
 
-                        resultText.setText("Reading selected file...");
-                        testReadFile(fileUri);
+                        setBusy(true);
+                        showResult("Uploading to Dropbox...");
+
+                        executor.execute(() -> {
+                            try {
+                                DropboxTransferService service =
+                                        DropboxTransferFactory.create(this);
+
+                                FileMetadata metadata = service.uploadFile(
+                                        uri, dropboxPath
+                                );
+
+                                showResult(
+                                        "UPLOAD SUCCESS!\n"
+                                                + "Name: " + metadata.getName()
+                                                + "\nPath: " + metadata.getPathDisplay()
+                                                + "\nSize: " + metadata.getSize()
+                                                + " bytes"
+                                );
+
+                            } catch (Exception e) {
+                                showResult(
+                                        "Upload failed: "
+                                                + e.getMessage()
+                                );
+                            } finally {
+                                setBusy(false);
+                            }
+                        });
                     }
             );
 
-    // File Picker for Download
     private final ActivityResultLauncher<Intent> downloadLauncher =
             registerForActivityResult(
                     new ActivityResultContracts.StartActivityForResult(),
                     result -> {
                         if (result.getResultCode() != Activity.RESULT_OK
-                                || result.getData() == null) {
-                            resultText.setText("Download cancelled");
+                                || result.getData() == null
+                                || result.getData().getData() == null) {
+                            showResult("Download cancelled");
                             return;
                         }
 
                         Uri destinationUri = result.getData().getData();
+                        String dropboxPath =
+                                dropboxPathInput.getText().toString().trim();
 
-                        if (destinationUri == null) {
-                            resultText.setText("Invalid destination URI");
-                            return;
-                        }
+                        setBusy(true);
+                        showResult("Downloading from Dropbox...");
 
-                        resultText.setText("Saving test file...");
-                        testDownload(destinationUri);
+                        executor.execute(() -> {
+                            try {
+                                DropboxTransferService service =
+                                        DropboxTransferFactory.create(this);
+
+                                FileMetadata metadata =
+                                        service.downloadFile(
+                                                dropboxPath,
+                                                destinationUri
+                                        );
+
+                                showResult(
+                                        "DOWNLOAD SUCCESS!\n"
+                                                + "Name: " + metadata.getName()
+                                                + "\nSize: " + metadata.getSize()
+                                                + " bytes"
+                                );
+
+                            } catch (Exception e) {
+                                showResult(
+                                        "Download failed: "
+                                                + e.getMessage()
+                                );
+                            } finally {
+                                setBusy(false);
+                            }
+                        });
                     }
             );
 
@@ -79,23 +131,29 @@ public class TransferTestActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
+        int padding = (int) (20 *
+                getResources().getDisplayMetrics().density);
+
         LinearLayout layout = new LinearLayout(this);
         layout.setOrientation(LinearLayout.VERTICAL);
-
-        int padding = (int) (20 * getResources()
-                .getDisplayMetrics().density);
         layout.setPadding(padding, padding, padding, padding);
 
-        Button uploadButton = new Button(this);
-        uploadButton.setText("SELECT FILE FOR UPLOAD");
+        uploadButton = new Button(this);
+        uploadButton.setText("UPLOAD TO DROPBOX");
 
-        Button downloadButton = new Button(this);
-        downloadButton.setText("TEST DOWNLOAD");
+        dropboxPathInput = new EditText(this);
+        dropboxPathInput.setSingleLine(true);
+        dropboxPathInput.setHint("Dropbox file path");
+        dropboxPathInput.setText("/test_upload_test_upload.txt");
+
+        downloadButton = new Button(this);
+        downloadButton.setText("DOWNLOAD FROM DROPBOX");
 
         resultText = new TextView(this);
-        resultText.setText("Choose Upload or Download");
+        resultText.setText("Dropbox Transfer Test");
 
         layout.addView(uploadButton);
+        layout.addView(dropboxPathInput);
         layout.addView(downloadButton);
         layout.addView(resultText);
 
@@ -109,95 +167,26 @@ public class TransferTestActivity extends AppCompatActivity {
                 )
         );
 
-        downloadButton.setOnClickListener(v ->
-                downloadLauncher.launch(
-                        FilePickerHelper.createDownloadIntent(
-                                "download_test.txt"
-                        )
-                )
-        );
-    }
+        downloadButton.setOnClickListener(v -> {
+            String path = dropboxPathInput.getText()
+                    .toString().trim();
 
-    // Test reading a small UTF-8 text file
-    private void testReadFile(Uri fileUri) {
-
-        executor.execute(() -> {
-            try (InputStream input =
-                         FileReadHelper.openFile(this, fileUri);
-                 ByteArrayOutputStream output =
-                         new ByteArrayOutputStream()) {
-
-                byte[] buffer = new byte[4096];
-                int bytesRead;
-                int totalBytes = 0;
-
-                while ((bytesRead = input.read(buffer)) != -1) {
-                    totalBytes += bytesRead;
-
-                    if (totalBytes > 4096) {
-                        throw new IOException(
-                                "Test file exceeds 4 KB"
-                        );
-                    }
-
-                    output.write(buffer, 0, bytesRead);
-                }
-
-                String content = new String(
-                        output.toByteArray(),
-                        StandardCharsets.UTF_8
-                );
-
-                String name = FileInfoHelper.getFileName(
-                        this, fileUri
-                );
-
-                long size = FileInfoHelper.getFileSize(
-                        this, fileUri
-                );
-
-                showResult(
-                        "UPLOAD FILE TEST\n\n"
-                                + "Name: " + name
-                                + "\nSize: " + size + " bytes"
-                                + "\nContent:\n" + content
-                );
-
-            } catch (Exception e) {
-                showResult("Read failed: " + e.getMessage());
+            if (path.isEmpty() || !path.startsWith("/")
+                    || path.length() <= 1) {
+                showResult("Enter a valid Dropbox path");
+                return;
             }
-        });
-    }
 
-    // Test saving sample data to Android storage
-    private void testDownload(Uri destinationUri) {
+            String fileName = path.substring(path.lastIndexOf('/') + 1);
 
-        executor.execute(() -> {
-            String sampleContent =
-                    "Hello from Dropbox Client!\n"
-                            + "This is a test download file.\n";
+            if (fileName.isEmpty()) {
+                showResult("Enter a file path, not a folder");
+                return;
+            }
 
-            byte[] data = sampleContent.getBytes(
-                    StandardCharsets.UTF_8
+            downloadLauncher.launch(
+                    FilePickerHelper.createDownloadIntent(fileName)
             );
-
-            try (InputStream input =
-                         new ByteArrayInputStream(data)) {
-
-                FileWriteHelper.writeFile(
-                        this, destinationUri, input
-                );
-
-                showResult(
-                        "DOWNLOAD TEST SUCCESS!\n\n"
-                                + "Saved file: download_test.txt"
-                                + "\nSize: " + data.length + " bytes"
-                                + "\nURI: " + destinationUri
-                );
-
-            } catch (Exception e) {
-                showResult("Download failed: " + e.getMessage());
-            }
         });
     }
 
@@ -205,6 +194,15 @@ public class TransferTestActivity extends AppCompatActivity {
         runOnUiThread(() -> {
             if (!isFinishing() && !isDestroyed()) {
                 resultText.setText(message);
+            }
+        });
+    }
+
+    private void setBusy(boolean busy) {
+        runOnUiThread(() -> {
+            if (!isFinishing() && !isDestroyed()) {
+                uploadButton.setEnabled(!busy);
+                downloadButton.setEnabled(!busy);
             }
         });
     }
