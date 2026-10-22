@@ -1,0 +1,60 @@
+package vn.edu.usth.dropboxclient.auth;
+
+import android.content.Context;
+import android.content.SharedPreferences;
+import android.security.keystore.KeyGenParameterSpec;
+import android.security.keystore.KeyProperties;
+import android.util.Base64;
+import com.dropbox.core.oauth.DbxCredential;
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.security.GeneralSecurityException;
+import java.security.KeyStore;
+import javax.crypto.Cipher;
+import javax.crypto.KeyGenerator;
+import javax.crypto.SecretKey;
+import javax.crypto.spec.GCMParameterSpec;
+
+/** Credentials are encrypted at rest; the AES key never leaves Android Keystore. */
+public final class SessionManager {
+    private static final String ALIAS = "dropbox_session_key";
+    private final SharedPreferences preferences;
+    public SessionManager(Context context) {
+        preferences = context.getSharedPreferences("dropbox_session", Context.MODE_PRIVATE);
+    }
+    private SecretKey key() throws GeneralSecurityException, IOException {
+        KeyStore store = KeyStore.getInstance("AndroidKeyStore");
+        store.load(null);
+        if (store.containsAlias(ALIAS)) return (SecretKey) store.getKey(ALIAS, null);
+        KeyGenerator generator = KeyGenerator.getInstance(KeyProperties.KEY_ALGORITHM_AES, "AndroidKeyStore");
+        generator.init(new KeyGenParameterSpec.Builder(ALIAS,
+                KeyProperties.PURPOSE_ENCRYPT | KeyProperties.PURPOSE_DECRYPT)
+                .setBlockModes(KeyProperties.BLOCK_MODE_GCM)
+                .setEncryptionPaddings(KeyProperties.ENCRYPTION_PADDING_NONE).build());
+        return generator.generateKey();
+    }
+    public void save(DbxCredential credential) throws GeneralSecurityException, IOException {
+        Cipher cipher = Cipher.getInstance("AES/GCM/NoPadding");
+        cipher.init(Cipher.ENCRYPT_MODE, key());
+        String data = Base64.encodeToString(cipher.doFinal(
+                credential.toString().getBytes(StandardCharsets.UTF_8)), Base64.NO_WRAP);
+        if (!preferences.edit().putString("iv", Base64.encodeToString(cipher.getIV(), Base64.NO_WRAP))
+                .putString("credential", data).commit()) throw new IOException("Session write failed");
+    }
+    public DbxCredential load() throws GeneralSecurityException, IOException {
+        String data = preferences.getString("credential", null);
+        if (data == null) return null;
+        try {
+            Cipher cipher = Cipher.getInstance("AES/GCM/NoPadding");
+            cipher.init(Cipher.DECRYPT_MODE, key(), new GCMParameterSpec(128,
+                    Base64.decode(preferences.getString("iv", ""), Base64.NO_WRAP)));
+            return DbxCredential.Reader.readFully(new String(cipher.doFinal(
+                    Base64.decode(data, Base64.NO_WRAP)), StandardCharsets.UTF_8));
+        } catch (IllegalArgumentException | com.dropbox.core.json.JsonReadException e) {
+            throw new IOException("Invalid session data", e);
+        }
+    }
+    public void clear() {
+        preferences.edit().clear().apply();
+    }
+}

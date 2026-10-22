@@ -1,6 +1,9 @@
 package vn.edu.usth.dropboxclient.ui.main;
 
 import android.os.Bundle;
+import android.content.Intent;
+import vn.edu.usth.dropboxclient.auth.DemoAuthManager;
+import vn.edu.usth.dropboxclient.ui.login.LoginActivity;
 import android.widget.RadioGroup;
 
 import androidx.activity.EdgeToEdge;
@@ -18,11 +21,17 @@ public class MainActivity extends AppCompatActivity {
 
     private static final String KEY_SELECTED_TAB = "selected_tab";
 
-    private int selectedTab = R.id.nav_files;
+    private int selectedTab = R.id.nav_account;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        if (new DemoAuthManager(this).currentUsername() == null) {
+            startActivity(new Intent(this, LoginActivity.class)
+                    .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK));
+            finish();
+            return;
+        }
 
         EdgeToEdge.enable(this);
         setContentView(R.layout.activity_main);
@@ -47,7 +56,7 @@ public class MainActivity extends AppCompatActivity {
         if (savedInstanceState != null) {
             selectedTab = savedInstanceState.getInt(
                     KEY_SELECTED_TAB,
-                    R.id.nav_files
+                    R.id.nav_account
             );
         }
 
