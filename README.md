@@ -6,7 +6,8 @@ USTH Mobile Application Development group project. The app is written in **Java 
 
 - Register and log in with a local demo username and password; no personal email is needed for this step. Demo logout does not disconnect project storage.
 - Connect a Dropbox account through **Account > Set up project storage**. The app verifies the account through `DropboxRepository.getCurrentAccount()` and shows the returned display name. **Disconnect project storage** removes the saved connection from that device.
-- In debug builds, open **Account > Test upload / download** to select a small local file and a download destination with Android's document pickers. The transfer service uses `DropboxRepository` for Dropbox API calls. The regular **Files** screen is still a placeholder.
+- **Files** reads the connected project's App Folder through `DropboxRepository`. It lists files and folders, opens folders, moves to the parent, refreshes, loads additional pages and shows loading, empty and error states with retry.
+- In debug builds, open **Account > Test upload / download** to select a small local file and a download destination with Android's document pickers. The transfer service uses `DropboxRepository` for Dropbox API calls.
 
 The Dropbox connection is shared by local demo users on the same device. A team member can build the app and develop the UI without the project's Dropbox email, password or token. A new device needs its own Dropbox authorization before it can call the real API.
 
@@ -16,7 +17,7 @@ The Dropbox connection is shared by local demo users on the same device. A team 
 2. Let Android Studio create the ignored `local.properties` file for your SDK path. Local demo login and unit tests work without a Dropbox App key.
 3. For real Dropbox access, add `DROPBOX_APP_KEY=your_app_key` to the root `local.properties` or set the environment variable, then rebuild. The App key is a public application identifier; never commit passwords, tokens or the App secret.
 4. Run the app on an emulator or device. Register a demo username (3-24 letters, digits or underscores) and a test password (8-128 characters). From Account, connect project storage and approve the Dropbox request.
-5. For transfer demonstrations, use **Account > Test upload / download** in a debug build. Start with a small disposable file. [Transfer acceptance and limitations](docs/transfer-review.md) explains the steps and test commands.
+5. Open **Files** to browse the connected project's App Folder. Use **Up** for the parent folder, **Refresh** to reload and **Load more** when Dropbox returns another page. For transfers, use **Account > Test upload / download** in a debug build with a small disposable file. [Transfer acceptance and limitations](docs/transfer-review.md) explains the test commands.
 
 On Windows, run the build and local tests with:
 
@@ -30,7 +31,7 @@ The Dropbox Developer App needs `account_info.read`, `files.metadata.read`, `fil
 
 - `DemoAuthManager` handles local usernames and password verification. Passwords are salted and hashed with PBKDF2-HMAC-SHA256; demo login is for coursework, not a production identity service.
 - `DropboxAuthManager` starts OAuth. `SessionManager` encrypts the Dropbox credential with AES-GCM and Android Keystore; backup rules exclude the demo and Dropbox preferences.
-- `DropboxClientFactory` creates `DbxClientV2`. `DropboxRepository` owns account and transfer API calls. `DropboxTransferService` handles Android URI streams, and `TransferTestActivity` provides the debug UI.
+- `DropboxClientFactory` creates `DbxClientV2`. `DropboxRepository` owns account, folder listing and transfer API calls. `FileBrowserFragment` presents paged Dropbox results; `DropboxTransferService` handles Android URI streams, and `TransferTestActivity` provides the debug UI.
 - Account requests, provider queries and transfers run on worker executors. UI updates return to the main thread.
 
 ## Verified on 22 October 2026
@@ -43,6 +44,8 @@ The Dropbox Developer App needs `account_info.read`, `files.metadata.read`, `fil
 - [x] The opt-in live test passed **1/1**: account lookup, App Folder listing, upload of a small synthetic file, download and exact byte comparison.
 - [x] An isolated device test confirmed that a rejected download does not truncate an existing local destination.
 
+On 25 October 2026, the File Browser branch passed `assembleDebug`, `testDebugUnitTest` (15/15) and `lintDebug` (0 errors, 9 warnings). The new folder-listing test uses an in-memory Dropbox response. Device verification of the Files screen is still pending.
+
 The isolated tests use local fixtures or an in-memory HTTP transport; the opt-in test above is the evidence for real Dropbox API access. See [transfer test details](docs/transfer-review.md). Do not run Gradle's `connectedDebugAndroidTest` on the authorized demo device: its cleanup was observed uninstalling the app. The linked guide shows how to run instrumentation directly while preserving the connection.
 
 ## Still to complete
@@ -50,7 +53,7 @@ The isolated tests use local fixtures or an in-memory HTTP transport; the opt-in
 - [ ] A second team member performs a clean clone, Gradle sync, build and run.
 - [ ] OAuth cancellation, revoked/expired authorization, token refresh and disconnect/reconnect are checked end to end on a device.
 - [ ] The debug transfer screen is checked manually with both document pickers, cancellation, offline failure and retry. The live API test does not cover every picker interaction.
-- [ ] The regular Files screen browses root and nested folders, handles empty folders, back navigation, pagination and Vietnamese filenames.
+- [ ] Verify the Files screen on an authorized device with root/nested/empty folders, parent navigation, pagination and Vietnamese filenames. The API path has unit coverage but the full screen needs a device check.
 - [ ] Create folder, rename and delete screens handle validation, conflicts and cancellation.
 - [ ] Rapid taps, rate limits, rotation during active work and process restart receive full regression checks.
 - [ ] The full MVP is integrated, the final demo is rehearsed and the presentation is complete.
