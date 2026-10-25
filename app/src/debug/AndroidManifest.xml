@@ -4,5 +4,8 @@
         <activity
             android:name=".ui.transfer.TransferTestActivity"
             android:exported="true" />
+        <activity
+            android:name=".ui.folder.FolderOperationsTestActivity"
+            android:exported="true" />
     </application>
 </manifest>

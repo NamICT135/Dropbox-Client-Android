@@ -55,4 +55,32 @@
     <string name="transfer_api_error">Dropbox could not transfer this file. Check the path and network. If permissions changed, connect Dropbox again and allow file access.</string>
     <string name="transfer_file_error">Unable to read or write the selected file. Choose another location and retry. An interrupted download may leave a partial local file.</string>
     <string name="transfer_session_error">Project Dropbox is not connected for this app. Use Connect / renew Dropbox permissions.</string>
+
+    <!-- Folder Operations -->
+    <string name="folder_title">Folder Operations</string>
+    <string name="folder_create">Create folder</string>
+    <string name="folder_create_title">New folder</string>
+    <string name="folder_create_hint">Folder name</string>
+    <string name="folder_rename">Rename</string>
+    <string name="folder_rename_title">Rename folder</string>
+    <string name="folder_rename_hint">New folder name</string>
+    <string name="folder_delete">Delete</string>
+    <string name="folder_delete_title">Delete folder</string>
+    <string name="folder_delete_confirm">Are you sure you want to delete \"%1$s\" and all its contents?</string>
+    <string name="folder_name_empty">Folder name cannot be empty.</string>
+    <string name="folder_name_invalid_chars">Folder name cannot contain / \\ : * ? \" &lt; &gt; |</string>
+    <string name="folder_name_too_long">Folder name is too long.</string>
+    <string name="folder_name_same">New name must be different from current name.</string>
+    <string name="folder_action_creating">Creating folder…</string>
+    <string name="folder_action_renaming">Renaming folder…</string>
+    <string name="folder_action_deleting">Deleting folder…</string>
+    <string name="folder_create_success">Folder \"%1$s\" created successfully.</string>
+    <string name="folder_rename_success">Folder renamed to \"%1$s\".</string>
+    <string name="folder_delete_success">Folder \"%1$s\" deleted.</string>
+    <string name="folder_conflict_error">A folder or file with this name already exists.</string>
+    <string name="folder_not_found_error">Folder was not found on Dropbox.</string>
+    <string name="folder_generic_error">Operation failed: %1$s</string>
+    <string name="btn_cancel">Cancel</string>
+    <string name="btn_confirm">Confirm</string>
+    <string name="btn_ok">OK</string>
 </resources>
