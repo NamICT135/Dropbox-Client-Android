@@ -44,7 +44,7 @@ The Dropbox Developer App needs `account_info.read`, `files.metadata.read`, `fil
 - [x] The opt-in live test passed **1/1**: account lookup, App Folder listing, upload of a small synthetic file, download and exact byte comparison.
 - [x] An isolated device test confirmed that a rejected download does not truncate an existing local destination.
 
-On 25 October 2026, the File Browser branch passed `assembleDebug`, `testDebugUnitTest` (15/15) and `lintDebug` (0 errors, 9 warnings). The new folder-listing test uses an in-memory Dropbox response. Device verification of the Files screen is still pending.
+On 25 October 2026, the File Browser branch passed `assembleDebug`, `testDebugUnitTest` (15/15) and `lintDebug` (0 errors, 9 warnings). The new folder-listing test uses an in-memory Dropbox response. On Pixel 6 API 34, the installed app retained the project connection, listed a real file in the App Folder root and loaded it again after **Refresh**.
 
 The isolated tests use local fixtures or an in-memory HTTP transport; the opt-in test above is the evidence for real Dropbox API access. See [transfer test details](docs/transfer-review.md). Do not run Gradle's `connectedDebugAndroidTest` on the authorized demo device: its cleanup was observed uninstalling the app. The linked guide shows how to run instrumentation directly while preserving the connection.
 
@@ -53,7 +53,7 @@ The isolated tests use local fixtures or an in-memory HTTP transport; the opt-in
 - [ ] A second team member performs a clean clone, Gradle sync, build and run.
 - [ ] OAuth cancellation, revoked/expired authorization, token refresh and disconnect/reconnect are checked end to end on a device.
 - [ ] The debug transfer screen is checked manually with both document pickers, cancellation, offline failure and retry. The live API test does not cover every picker interaction.
-- [ ] Verify the Files screen on an authorized device with root/nested/empty folders, parent navigation, pagination and Vietnamese filenames. The API path has unit coverage but the full screen needs a device check.
+- [ ] Verify nested/empty folders, parent navigation, pagination and Vietnamese filenames on an authorized device. Root listing and Refresh have been checked.
 - [ ] Create folder, rename and delete screens handle validation, conflicts and cancellation.
 - [ ] Rapid taps, rate limits, rotation during active work and process restart receive full regression checks.
 - [ ] The full MVP is integrated, the final demo is rehearsed and the presentation is complete.
