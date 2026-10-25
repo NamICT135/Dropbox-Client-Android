@@ -4,6 +4,7 @@ import com.dropbox.core.DbxException;
 import com.dropbox.core.DbxDownloader;
 import com.dropbox.core.v2.DbxClientV2;
 import com.dropbox.core.v2.files.FileMetadata;
+import com.dropbox.core.v2.files.ListFolderResult;
 import com.dropbox.core.v2.files.WriteMode;
 import com.dropbox.core.v2.users.FullAccount;
 import java.io.IOException;
@@ -19,6 +20,14 @@ public class DropboxRepository {
 
     public FullAccount getCurrentAccount() throws DbxException {
         return client.users().getCurrentAccount();
+    }
+
+    public ListFolderResult listFolder(String path) throws DbxException {
+        return client.files().listFolder(path);
+    }
+
+    public ListFolderResult continueListFolder(String cursor) throws DbxException {
+        return client.files().listFolderContinue(cursor);
     }
 
     /** Caller owns the input stream. Existing cloud files are never silently overwritten. */
