@@ -2,7 +2,17 @@
     <string name="app_name">Dropbox Client</string>
     <string name="nav_files">Files</string>
     <string name="nav_account">Account</string>
-    <string name="files_placeholder">File browser\nDropbox files will appear here.</string>
+    <string name="files_path">Dropbox: %1$s</string>
+    <string name="files_up">Up</string>
+    <string name="files_refresh">Refresh</string>
+    <string name="files_empty">This folder is empty.</string>
+    <string name="files_load_error">Could not load this folder. Check your connection and files.metadata.read permission.</string>
+    <string name="files_connect_required">Connect project Dropbox from Account to browse files.</string>
+    <string name="files_retry">Try again</string>
+    <string name="files_more">Load more</string>
+    <string name="files_page_error">Could not load more items. Try again.</string>
+    <string name="files_folder_item">Folder: %1$s</string>
+    <string name="files_file_item">File: %1$s</string>
     <string name="login_title">Dropbox Client</string>
     <string name="auth_setup_required">Configure DROPBOX_APP_KEY in local.properties, then rebuild the app.</string>
     <string name="auth_waiting">Waiting for Dropbox authorizationâ€¦</string>
@@ -57,7 +67,6 @@
     <string name="transfer_session_error">Project Dropbox is not connected for this app. Use Connect / renew Dropbox permissions.</string>
 
     <!-- Folder Operations -->
-    <string name="folder_title">Folder Operations</string>
     <string name="folder_create">Create folder</string>
     <string name="folder_create_title">New folder</string>
     <string name="folder_create_hint">Folder name</string>
@@ -69,6 +78,7 @@
     <string name="folder_delete_confirm">Are you sure you want to delete \"%1$s\" and all its contents?</string>
     <string name="folder_name_empty">Folder name cannot be empty.</string>
     <string name="folder_name_invalid_chars">Folder name cannot contain / \\ : * ? \" &lt; &gt; |</string>
+    <string name="folder_name_edge">Folder name cannot start or end with a space, or end with a period.</string>
     <string name="folder_name_too_long">Folder name is too long.</string>
     <string name="folder_name_same">New name must be different from current name.</string>
     <string name="folder_action_creating">Creating folder…</string>
@@ -79,8 +89,8 @@
     <string name="folder_delete_success">Folder \"%1$s\" deleted.</string>
     <string name="folder_conflict_error">A folder or file with this name already exists.</string>
     <string name="folder_not_found_error">Folder was not found on Dropbox.</string>
-    <string name="folder_generic_error">Operation failed: %1$s</string>
+    <string name="folder_api_error">Dropbox could not complete this action. Check the connection and permissions, then refresh the folder before trying again.</string>
+    <string name="folder_action_hint">Long press a folder to rename or delete it.</string>
+    <string name="folder_invalid_path">This folder path is invalid. Refresh and select a folder again.</string>
     <string name="btn_cancel">Cancel</string>
-    <string name="btn_confirm">Confirm</string>
-    <string name="btn_ok">OK</string>
 </resources>

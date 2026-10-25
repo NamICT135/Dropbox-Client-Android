@@ -44,6 +44,8 @@ public class FolderValidationHelperTest {
     @Test
     public void rejectsTrailingPeriodOrSpace() {
         assertEquals(ValidationError.ENDS_WITH_PERIOD_OR_SPACE, FolderValidationHelper.validateFolderName("folder."));
+        assertEquals(ValidationError.ENDS_WITH_PERIOD_OR_SPACE, FolderValidationHelper.validateFolderName("folder "));
+        assertEquals(ValidationError.ENDS_WITH_PERIOD_OR_SPACE, FolderValidationHelper.validateFolderName(" folder"));
     }
 
     @Test
@@ -59,7 +61,8 @@ public class FolderValidationHelperTest {
     public void validatesRenameCorrectly() {
         assertEquals(ValidationError.SAME_NAME, FolderValidationHelper.validateRename("Projects", "Projects"));
         assertEquals(ValidationError.SAME_NAME, FolderValidationHelper.validateRename("Projects", "projects"));
-        assertEquals(ValidationError.SAME_NAME, FolderValidationHelper.validateRename("Projects", "  projects  "));
+        assertEquals(ValidationError.ENDS_WITH_PERIOD_OR_SPACE,
+                FolderValidationHelper.validateRename("Projects", "  projects  "));
         assertEquals(ValidationError.NONE, FolderValidationHelper.validateRename("OldName", "NewName"));
         assertEquals(ValidationError.INVALID_CHARACTERS, FolderValidationHelper.validateRename("OldName", "New/Name"));
     }
@@ -73,6 +76,8 @@ public class FolderValidationHelperTest {
         assertEquals("/parent/child", FolderValidationHelper.buildChildPath("/parent/", "child"));
         assertEquals("/parent/child", FolderValidationHelper.buildChildPath("parent", "child"));
         assertEquals("/parent/sub/child", FolderValidationHelper.buildChildPath("/parent/sub", "child"));
+        assertThrows(IllegalArgumentException.class,
+                () -> FolderValidationHelper.buildChildPath("/parent", "bad/name"));
     }
 
     @Test

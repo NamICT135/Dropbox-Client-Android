@@ -77,7 +77,7 @@ public class RenameFolderDialogFragment extends DialogFragment {
         dialog.setOnShowListener(d -> {
             Button positiveBtn = dialog.getButton(AlertDialog.BUTTON_POSITIVE);
             positiveBtn.setOnClickListener(v -> {
-                String newName = input.getText() != null ? input.getText().toString().trim() : "";
+                String newName = input.getText() != null ? input.getText().toString() : "";
                 FolderValidationHelper.ValidationError error =
                         FolderValidationHelper.validateRename(currentName, newName);
                 if (error != FolderValidationHelper.ValidationError.NONE) {
@@ -110,8 +110,9 @@ public class RenameFolderDialogFragment extends DialogFragment {
             case SAME_NAME:
                 return getString(R.string.folder_name_same);
             case INVALID_CHARACTERS:
-            case ENDS_WITH_PERIOD_OR_SPACE:
                 return getString(R.string.folder_name_invalid_chars);
+            case ENDS_WITH_PERIOD_OR_SPACE:
+                return getString(R.string.folder_name_edge);
             case TOO_LONG:
                 return getString(R.string.folder_name_too_long);
             default:

@@ -72,7 +72,7 @@ public class CreateFolderDialogFragment extends DialogFragment {
         dialog.setOnShowListener(d -> {
             Button positiveBtn = dialog.getButton(AlertDialog.BUTTON_POSITIVE);
             positiveBtn.setOnClickListener(v -> {
-                String folderName = input.getText() != null ? input.getText().toString().trim() : "";
+                String folderName = input.getText() != null ? input.getText().toString() : "";
                 FolderValidationHelper.ValidationError error = FolderValidationHelper.validateFolderName(folderName);
                 if (error != FolderValidationHelper.ValidationError.NONE) {
                     input.setError(getErrorMessage(error));
@@ -106,7 +106,7 @@ public class CreateFolderDialogFragment extends DialogFragment {
             case TOO_LONG:
                 return getString(R.string.folder_name_too_long);
             case ENDS_WITH_PERIOD_OR_SPACE:
-                return getString(R.string.folder_name_invalid_chars);
+                return getString(R.string.folder_name_edge);
             default:
                 return getString(R.string.folder_name_empty);
         }

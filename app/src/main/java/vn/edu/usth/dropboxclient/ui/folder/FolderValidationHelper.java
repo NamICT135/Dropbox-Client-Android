@@ -29,17 +29,15 @@ public final class FolderValidationHelper {
             return ValidationError.EMPTY;
         }
 
-        String trimmed = name.trim();
-
-        if (trimmed.length() > MAX_NAME_LENGTH) {
+        if (name.length() > MAX_NAME_LENGTH) {
             return ValidationError.TOO_LONG;
         }
 
-        if (INVALID_CHARS_PATTERN.matcher(trimmed).find()) {
+        if (INVALID_CHARS_PATTERN.matcher(name).find()) {
             return ValidationError.INVALID_CHARACTERS;
         }
 
-        if (trimmed.endsWith(".") || trimmed.endsWith(" ")) {
+        if (!name.equals(name.trim()) || name.endsWith(".")) {
             return ValidationError.ENDS_WITH_PERIOD_OR_SPACE;
         }
 
@@ -67,11 +65,12 @@ public final class FolderValidationHelper {
      * Normalized paths always begin with a single forward slash.
      */
     public static String buildChildPath(String parentPath, String childName) {
-        if (childName == null || childName.trim().isEmpty()) {
-            throw new IllegalArgumentException("Child name cannot be empty");
+        ValidationError error = validateFolderName(childName);
+        if (error != ValidationError.NONE) {
+            throw new IllegalArgumentException("Invalid child name: " + error);
         }
 
-        String cleanChild = childName.trim();
+        String cleanChild = childName;
         if (parentPath == null || parentPath.trim().isEmpty() || parentPath.trim().equals("/")) {
             return "/" + cleanChild;
         }
