@@ -16,6 +16,8 @@
             android:layout_height="wrap_content" android:text="@string/project_setup" />
         <Button android:id="@+id/account_disconnect" android:layout_width="match_parent"
             android:layout_height="wrap_content" android:visibility="gone" android:text="@string/project_disconnect" />
+        <Button android:id="@+id/account_transfer_debug" android:layout_width="match_parent"
+            android:layout_height="wrap_content" android:visibility="gone" android:text="@string/transfer_title" />
         <Button android:id="@+id/account_logout" android:layout_width="match_parent"
             android:layout_height="wrap_content" android:layout_marginTop="16dp" android:text="@string/demo_logout" />
     </LinearLayout>
