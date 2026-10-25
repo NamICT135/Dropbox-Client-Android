@@ -4,12 +4,12 @@ USTH Mobile Application Development group project. The app is written in **Java 
 
 ## What the app does now
 
-- Register and log in with a local demo username and password; no personal email is needed for this step. Demo logout does not disconnect project storage.
-- Connect a Dropbox account through **Account > Set up project storage**. The app verifies the account through `DropboxRepository.getCurrentAccount()` and shows the returned display name. **Disconnect project storage** removes the saved connection from that device.
+- Register and sign in with a local demo username and password. Registration has optional first name, surname and email fields; these are local profile details, not a new Dropbox account. Existing demo accounts still work without an email. **Log out** removes both the demo login and the locally saved Dropbox credential before returning to login.
+- Connect a Dropbox account through **Account > Set up project storage**. The app verifies the account before saving the credential and displays the name, email and verification state, plan and account ID returned by Dropbox. Network errors can be retried; invalid access requires connecting again. **Disconnect Dropbox only** keeps the demo login.
 - **Files** reads the connected project's App Folder through `DropboxRepository`. It lists files and folders, opens folders, moves to the parent, refreshes, loads additional pages and shows loading, empty and error states with retry.
 - In debug builds, open **Account > Test upload / download** to select a small local file and a download destination with Android's document pickers. The transfer service uses `DropboxRepository` for Dropbox API calls.
 
-The Dropbox connection is shared by local demo users on the same device. A team member can build the app and develop the UI without the project's Dropbox email, password or token. A new device needs its own Dropbox authorization before it can call the real API.
+The Dropbox connection is local to the device and is cleared on full logout. Logging in to the demo again requires a new Dropbox OAuth authorization. A team member can build the app and develop the UI without the project's Dropbox email, password or token. A new device also needs its own Dropbox authorization before it can call the real API.
 
 ## Run the project
 
@@ -31,8 +31,9 @@ The Dropbox Developer App needs `account_info.read`, `files.metadata.read`, `fil
 
 - `DemoAuthManager` handles local usernames and password verification. Passwords are salted and hashed with PBKDF2-HMAC-SHA256; demo login is for coursework, not a production identity service.
 - `DropboxAuthManager` starts OAuth. `SessionManager` encrypts the Dropbox credential with AES-GCM and Android Keystore; backup rules exclude the demo and Dropbox preferences.
+- OAuth cancellation or failed account verification preserves the current connection. Session revisions prevent callbacks and account lookups started before logout or disconnect from restoring or displaying the old connection. Local removal does not revoke a token on Dropbox's servers.
 - `DropboxClientFactory` creates `DbxClientV2`. `DropboxRepository` owns account, folder listing and transfer API calls. `FileBrowserFragment` presents paged Dropbox results; `DropboxTransferService` handles Android URI streams, and `TransferTestActivity` provides the debug UI.
-- Account requests, provider queries and transfers run on worker executors. UI updates return to the main thread.
+- Login and Dropbox verification use ViewModels so rotation retains pending work. Passwords are not saved in Activity state. Account requests, provider queries and transfers run on worker executors. UI updates return to the main thread.
 
 ## Verified on 22 October 2026
 
@@ -46,12 +47,15 @@ The Dropbox Developer App needs `account_info.read`, `files.metadata.read`, `fil
 
 On 25 October 2026, the File Browser branch passed `assembleDebug`, `testDebugUnitTest` (15/15) and `lintDebug` (0 errors, 9 warnings). The new folder-listing test uses an in-memory Dropbox response. On Pixel 6 API 34, the installed app retained the project connection, listed a real file in the App Folder root and loaded it again after **Refresh**.
 
+On 25 October 2026, the login/account update passed `assembleDebug`, `assembleDebugAndroidTest`, `testDebugUnitTest` (**23/23**) and `lintDebug` (**0 errors, 11 warnings**). Direct instrumentation on a fresh Pixel 6 API 34 emulator passed **14 isolated tests**, with **2 live Dropbox tests intentionally skipped**. Coverage includes registration correction, duplicate users, sign-in/logout, optional profiles, form recreation, cancelled logout, encrypted session round-trips and stale OAuth rejection. No App key or live Dropbox account was available for this run; live OAuth cancellation, revoked access and refresh still need the device checks below.
+
 The isolated tests use local fixtures or an in-memory HTTP transport; the opt-in test above is the evidence for real Dropbox API access. See [transfer test details](docs/transfer-review.md). Do not run Gradle's `connectedDebugAndroidTest` on the authorized demo device: its cleanup was observed uninstalling the app. The linked guide shows how to run instrumentation directly while preserving the connection.
 
 ## Still to complete
 
 - [ ] A second team member performs a clean clone, Gradle sync, build and run.
 - [ ] OAuth cancellation, revoked/expired authorization, token refresh and disconnect/reconnect are checked end to end on a device.
+- [ ] On a device with a configured App key and test Dropbox account, check OAuth → Account displays the Dropbox name → full logout → demo login again shows disconnected → OAuth is required again. Also check cancel, offline retry, revoked access and **Disconnect Dropbox only**. This live regression has not yet been run for the session changes above.
 - [ ] The debug transfer screen is checked manually with both document pickers, cancellation, offline failure and retry. The live API test does not cover every picker interaction.
 - [ ] Verify nested/empty folders, parent navigation, pagination and Vietnamese filenames on an authorized device. Root listing and Refresh have been checked.
 - [ ] Create folder, rename and delete screens handle validation, conflicts and cancellation.

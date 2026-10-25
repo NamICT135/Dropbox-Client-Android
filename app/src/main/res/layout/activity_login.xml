@@ -1,27 +1,66 @@
 <?xml version="1.0" encoding="utf-8"?>
 <ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:id="@+id/login_root" android:layout_width="match_parent"
     android:layout_height="match_parent" android:fillViewport="true">
     <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
-        android:orientation="vertical" android:gravity="center" android:padding="24dp">
+        android:orientation="vertical" android:padding="24dp">
         <TextView android:layout_width="match_parent" android:layout_height="wrap_content"
-            android:text="@string/login_title" android:textSize="28sp" android:textStyle="bold" android:gravity="center" />
-        <TextView android:layout_width="match_parent" android:layout_height="wrap_content"
-            android:layout_marginTop="16dp" android:text="@string/demo_notice" />
-        <EditText android:id="@+id/demo_username" android:layout_width="match_parent"
-            android:layout_height="wrap_content" android:minHeight="48dp" android:layout_marginTop="16dp"
-            android:hint="@string/demo_username" android:inputType="text|textNoSuggestions"
-            android:autofillHints="username" android:maxLength="24" android:singleLine="true" />
-        <EditText android:id="@+id/demo_password" android:layout_width="match_parent"
-            android:layout_height="wrap_content" android:minHeight="48dp"
-            android:hint="@string/demo_password" android:inputType="textPassword"
-            android:importantForAutofill="no" android:saveEnabled="false" android:maxLength="128" android:singleLine="true" />
+            android:layout_marginTop="24dp" android:text="@string/login_title"
+            android:textColor="?attr/colorPrimary" android:textSize="16sp" android:textStyle="bold" />
+        <TextView android:id="@+id/login_heading" android:layout_width="match_parent" android:layout_height="wrap_content"
+            android:layout_marginTop="24dp" android:text="@string/login_heading" android:textSize="32sp" android:textStyle="bold" />
+        <com.google.android.material.button.MaterialButton android:id="@+id/login_switch"
+            style="@style/Widget.Material3.Button.TextButton" android:layout_width="wrap_content"
+            android:layout_height="wrap_content" android:layout_marginBottom="16dp"
+            android:text="@string/login_switch" android:textAlignment="viewStart" />
+        <LinearLayout android:id="@+id/register_profile" android:layout_width="match_parent"
+            android:layout_height="wrap_content" android:orientation="vertical" android:visibility="gone">
+            <com.google.android.material.textfield.TextInputLayout style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
+                android:layout_width="match_parent" android:layout_height="wrap_content" android:hint="@string/profile_first_name">
+                <com.google.android.material.textfield.TextInputEditText android:id="@+id/profile_first_name"
+                    android:layout_width="match_parent" android:layout_height="wrap_content" android:inputType="textPersonName|textCapWords"
+                    android:autofillHints="personGivenName" android:maxLength="60" android:singleLine="true" android:imeOptions="actionNext" />
+            </com.google.android.material.textfield.TextInputLayout>
+            <com.google.android.material.textfield.TextInputLayout style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
+                android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="12dp" android:hint="@string/profile_last_name">
+                <com.google.android.material.textfield.TextInputEditText android:id="@+id/profile_last_name"
+                    android:layout_width="match_parent" android:layout_height="wrap_content" android:inputType="textPersonName|textCapWords"
+                    android:autofillHints="personFamilyName" android:maxLength="60" android:singleLine="true" android:imeOptions="actionNext" />
+            </com.google.android.material.textfield.TextInputLayout>
+            <com.google.android.material.textfield.TextInputLayout style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
+                android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="12dp" android:hint="@string/profile_email">
+                <com.google.android.material.textfield.TextInputEditText android:id="@+id/profile_email"
+                    android:layout_width="match_parent" android:layout_height="wrap_content" android:inputType="textEmailAddress"
+                    android:autofillHints="emailAddress" android:maxLength="254" android:singleLine="true" android:imeOptions="actionNext" />
+            </com.google.android.material.textfield.TextInputLayout>
+        </LinearLayout>
+        <com.google.android.material.textfield.TextInputLayout style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
+            android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="12dp" android:hint="@string/demo_username">
+            <com.google.android.material.textfield.TextInputEditText android:id="@+id/demo_username"
+                android:layout_width="match_parent" android:layout_height="wrap_content" android:inputType="text|textNoSuggestions"
+                android:autofillHints="username" android:maxLength="24" android:singleLine="true" android:imeOptions="actionNext" />
+        </com.google.android.material.textfield.TextInputLayout>
+        <com.google.android.material.textfield.TextInputLayout style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
+            android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="12dp"
+            android:hint="@string/demo_password" app:endIconMode="password_toggle">
+            <com.google.android.material.textfield.TextInputEditText android:id="@+id/demo_password"
+                android:layout_width="match_parent" android:layout_height="wrap_content" android:inputType="textPassword"
+                android:importantForAutofill="no" android:saveEnabled="false" android:maxLength="128" android:singleLine="true" android:imeOptions="actionDone" />
+        </com.google.android.material.textfield.TextInputLayout>
         <TextView android:id="@+id/login_status" android:layout_width="match_parent"
             android:layout_height="wrap_content" android:layout_marginTop="16dp"
             android:text="@string/demo_login_help" android:accessibilityLiveRegion="polite" />
-        <Button android:id="@+id/button_continue" android:layout_width="match_parent"
-            android:layout_height="wrap_content" android:layout_marginTop="16dp" android:text="@string/demo_login" />
-        <Button android:id="@+id/button_register" android:layout_width="match_parent"
-            android:layout_height="wrap_content" android:text="@string/demo_register" />
+        <com.google.android.material.progressindicator.LinearProgressIndicator android:id="@+id/login_progress"
+            android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="12dp"
+            android:indeterminate="true" android:visibility="gone" />
+        <com.google.android.material.button.MaterialButton android:id="@+id/button_continue"
+            android:layout_width="match_parent" android:layout_height="56dp" android:layout_marginTop="16dp"
+            app:cornerRadius="4dp" android:text="@string/login_submit" />
+        <com.google.android.material.button.MaterialButton android:id="@+id/button_register"
+            android:layout_width="match_parent" android:layout_height="56dp" android:layout_marginTop="16dp"
+            app:cornerRadius="4dp" android:visibility="gone" android:text="@string/register_submit" />
+        <TextView android:id="@+id/login_notice" android:layout_width="match_parent" android:layout_height="wrap_content"
+            android:layout_marginTop="20dp" android:text="@string/demo_notice" android:textSize="13sp" />
     </LinearLayout>
 </ScrollView>

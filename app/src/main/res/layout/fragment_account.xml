@@ -1,24 +1,76 @@
 <?xml version="1.0" encoding="utf-8"?>
 <ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent" android:layout_height="match_parent" android:fillViewport="true">
     <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
         android:orientation="vertical" android:padding="24dp">
-        <TextView android:id="@+id/demo_account" android:layout_width="match_parent"
-            android:layout_height="wrap_content" android:textSize="22sp" android:textStyle="bold" />
         <TextView android:layout_width="match_parent" android:layout_height="wrap_content"
-            android:layout_marginTop="8dp" android:text="@string/demo_shared_storage" />
-        <TextView android:id="@+id/account_info" android:layout_width="match_parent"
-            android:layout_height="wrap_content" android:layout_marginTop="24dp" android:minHeight="96dp"
-            android:textSize="18sp" android:text="@string/account_loading" android:accessibilityLiveRegion="polite" />
-        <Button android:id="@+id/account_retry" android:layout_width="match_parent"
-            android:layout_height="wrap_content" android:text="@string/account_retry" />
-        <Button android:id="@+id/account_connect" android:layout_width="match_parent"
-            android:layout_height="wrap_content" android:text="@string/project_setup" />
-        <Button android:id="@+id/account_disconnect" android:layout_width="match_parent"
-            android:layout_height="wrap_content" android:visibility="gone" android:text="@string/project_disconnect" />
-        <Button android:id="@+id/account_transfer_debug" android:layout_width="match_parent"
-            android:layout_height="wrap_content" android:visibility="gone" android:text="@string/transfer_title" />
-        <Button android:id="@+id/account_logout" android:layout_width="match_parent"
-            android:layout_height="wrap_content" android:layout_marginTop="16dp" android:text="@string/demo_logout" />
+            android:text="@string/account_title" android:textSize="32sp" android:textStyle="bold" />
+        <TextView android:layout_width="match_parent" android:layout_height="wrap_content"
+            android:layout_marginTop="4dp" android:text="@string/account_subtitle" />
+        <com.google.android.material.card.MaterialCardView android:layout_width="match_parent"
+            android:layout_height="wrap_content" android:layout_marginTop="24dp" app:cardCornerRadius="16dp">
+            <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+                android:orientation="vertical" android:padding="20dp">
+                <TextView android:layout_width="match_parent" android:layout_height="wrap_content"
+                    android:text="@string/account_local_heading" android:textColor="?attr/colorPrimary" android:textStyle="bold" />
+                <TextView android:id="@+id/demo_account" android:layout_width="match_parent"
+                    android:layout_height="wrap_content" android:layout_marginTop="12dp" android:textSize="18sp" android:textStyle="bold" />
+                <TextView android:id="@+id/local_profile" android:layout_width="match_parent"
+                    android:layout_height="wrap_content" android:layout_marginTop="8dp" android:textIsSelectable="true" />
+                <TextView android:layout_width="match_parent" android:layout_height="wrap_content"
+                    android:layout_marginTop="12dp" android:text="@string/demo_shared_storage" android:textSize="12sp" />
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
+        <com.google.android.material.card.MaterialCardView android:layout_width="match_parent"
+            android:layout_height="wrap_content" android:layout_marginTop="16dp" app:cardCornerRadius="16dp">
+            <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+                android:orientation="vertical" android:padding="20dp">
+                <TextView android:layout_width="match_parent" android:layout_height="wrap_content"
+                    android:text="@string/account_cloud_heading" android:textSize="20sp" android:textStyle="bold" />
+                <com.google.android.material.progressindicator.LinearProgressIndicator android:id="@+id/account_progress"
+                    android:layout_width="match_parent" android:layout_height="wrap_content"
+                    android:layout_marginTop="12dp" android:indeterminate="true" />
+                <TextView android:id="@+id/account_info" android:layout_width="match_parent"
+                    android:layout_height="wrap_content" android:layout_marginTop="16dp"
+                    android:text="@string/account_loading" android:accessibilityLiveRegion="polite" />
+                <LinearLayout android:id="@+id/account_details" android:layout_width="match_parent"
+                    android:layout_height="wrap_content" android:orientation="vertical" android:visibility="gone">
+                    <TextView android:layout_width="match_parent" android:layout_height="wrap_content"
+                        android:layout_marginTop="16dp" android:text="@string/account_name" android:textSize="12sp" />
+                    <TextView android:id="@+id/cloud_name" android:layout_width="match_parent"
+                        android:layout_height="wrap_content" android:textSize="16sp" android:textIsSelectable="true" />
+                    <TextView android:layout_width="match_parent" android:layout_height="wrap_content"
+                        android:layout_marginTop="16dp" android:text="@string/account_email" android:textSize="12sp" />
+                    <TextView android:id="@+id/cloud_email" android:layout_width="match_parent"
+                        android:layout_height="wrap_content" android:textSize="16sp" android:textIsSelectable="true" />
+                    <TextView android:layout_width="match_parent" android:layout_height="wrap_content"
+                        android:layout_marginTop="16dp" android:text="@string/account_plan" android:textSize="12sp" />
+                    <TextView android:id="@+id/cloud_plan" android:layout_width="match_parent"
+                        android:layout_height="wrap_content" android:textSize="16sp" android:textIsSelectable="true" />
+                    <TextView android:layout_width="match_parent" android:layout_height="wrap_content"
+                        android:layout_marginTop="16dp" android:text="@string/account_id" android:textSize="12sp" />
+                    <TextView android:id="@+id/cloud_id" android:layout_width="match_parent"
+                        android:layout_height="wrap_content" android:textSize="16sp" android:textIsSelectable="true" />
+                </LinearLayout>
+                <com.google.android.material.button.MaterialButton android:id="@+id/account_retry"
+                    style="@style/Widget.Material3.Button.TextButton" android:layout_width="match_parent"
+                    android:layout_height="wrap_content" android:layout_marginTop="12dp" android:text="@string/account_retry" />
+                <com.google.android.material.button.MaterialButton android:id="@+id/account_connect"
+                    android:layout_width="match_parent" android:layout_height="wrap_content" android:minHeight="56dp"
+                    android:text="@string/project_setup" />
+                <com.google.android.material.button.MaterialButton android:id="@+id/account_disconnect"
+                    style="@style/Widget.Material3.Button.OutlinedButton" android:layout_width="match_parent"
+                    android:layout_height="wrap_content" android:minHeight="56dp" android:visibility="gone"
+                    android:text="@string/project_disconnect" />
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
+        <com.google.android.material.button.MaterialButton android:id="@+id/account_transfer_debug"
+            style="@style/Widget.Material3.Button.OutlinedButton" android:layout_width="match_parent"
+            android:layout_height="wrap_content" android:minHeight="56dp" android:layout_marginTop="20dp"
+            android:visibility="gone" android:text="@string/transfer_title" />
+        <com.google.android.material.button.MaterialButton android:id="@+id/account_logout"
+            android:layout_width="match_parent" android:layout_height="wrap_content" android:minHeight="56dp"
+            android:layout_marginTop="8dp" android:text="@string/account_logout" />
     </LinearLayout>
 </ScrollView>

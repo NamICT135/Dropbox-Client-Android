@@ -60,6 +60,9 @@ public class DropboxRepositoryTest {
         FullAccount account = repository(transport).getCurrentAccount();
         assertEquals("Project Demo", account.getName().getDisplayName());
         assertEquals("project@example.test", account.getEmail());
+        assertTrue(account.getEmailVerified());
+        assertEquals(com.dropbox.core.v2.userscommon.AccountType.BASIC, account.getAccountType());
+        assertEquals("dbid:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", account.getAccountId());
         assertEquals("https://api.dropboxapi.com/2/users/get_current_account", transport.requestedUrl);
     }
     @Test public void revokedAccessPropagatesToCaller() {

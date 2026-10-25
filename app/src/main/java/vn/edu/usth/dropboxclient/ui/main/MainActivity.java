@@ -76,6 +76,15 @@ public class MainActivity extends AppCompatActivity {
         });
     }
 
+    @Override protected void onResume() {
+        super.onResume();
+        if (new DemoAuthManager(this).currentUsername() == null) {
+            startActivity(new Intent(this, LoginActivity.class)
+                    .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK));
+            finish();
+        }
+    }
+
     private void showTab(int tabId) {
         Class<? extends Fragment> screen;
 

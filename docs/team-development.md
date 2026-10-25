@@ -14,7 +14,7 @@ Verified on 22 October 2026: a separate source copy with no `DROPBOX_APP_KEY` in
 
 ## Integrate the real cloud on the demo device
 
-The presenter connects the dedicated project Dropbox account through Account > Set up project storage. The encrypted credential stays on that device. Other demo users on that same device can use the project connection through their local demo sessions; demo logout preserves it. This is shared academic storage, without per-user cloud isolation.
+The presenter connects the dedicated project Dropbox account through Account > Set up project storage. The encrypted credential stays on that device until **Disconnect Dropbox only** or full logout. Full logout clears the demo session and local Dropbox credential; a later demo login needs fresh OAuth. This is shared academic storage while connected, without per-user cloud isolation.
 
 Real Dropbox integration tests need a valid authorization. A member who needs an independent live test can authorize a separate Dropbox test account on their own device; they do not need the project account's login. An App key identifies the application and does not grant data access by itself. Development users must be allowed in the Developer App, and each account grants its own consent. Store any local App key in ignored configuration.
 

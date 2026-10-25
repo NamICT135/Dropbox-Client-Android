@@ -11,9 +11,9 @@ import androidx.annotation.Nullable;
 import androidx.appcompat.app.AlertDialog;
 import androidx.fragment.app.Fragment;
 import com.dropbox.core.DbxException;
-import com.dropbox.core.InvalidAccessTokenException;
 import com.dropbox.core.oauth.DbxCredential;
 import com.dropbox.core.v2.users.FullAccount;
+import com.dropbox.core.v2.userscommon.AccountType;
 import java.io.IOException;
 import java.security.GeneralSecurityException;
 import java.util.concurrent.ExecutorService;
@@ -22,6 +22,7 @@ import vn.edu.usth.dropboxclient.BuildConfig;
 import vn.edu.usth.dropboxclient.R;
 import vn.edu.usth.dropboxclient.auth.DemoAuthManager;
 import vn.edu.usth.dropboxclient.auth.DropboxClientFactory;
+import vn.edu.usth.dropboxclient.auth.DropboxConnection;
 import vn.edu.usth.dropboxclient.auth.SessionManager;
 import vn.edu.usth.dropboxclient.repository.DropboxRepository;
 import vn.edu.usth.dropboxclient.ui.login.LoginActivity;
@@ -37,6 +38,9 @@ public class AccountFragment extends Fragment {
         DemoAuthManager demo = new DemoAuthManager(requireContext());
         TextView user = view.findViewById(R.id.demo_account);
         user.setText(getString(R.string.demo_account_details, demo.currentUsername()));
+        ((TextView) view.findViewById(R.id.local_profile)).setText(getString(
+                R.string.account_profile_details, demo.currentDisplayName(),
+                demo.currentEmail().isEmpty() ? getString(R.string.account_email_unset) : demo.currentEmail()));
         SessionManager cloud = new SessionManager(requireContext());
         if (BuildConfig.DEBUG) {
             view.findViewById(R.id.account_transfer_debug).setVisibility(View.VISIBLE);
@@ -51,15 +55,21 @@ public class AccountFragment extends Fragment {
                         .setNegativeButton(android.R.string.cancel, null)
                         .setPositiveButton(R.string.project_disconnect, (dialog, which) -> {
                             generation++;
-                            cloud.clear();
-                            load(view, cloud);
+                            if (cloud.clear()) load(view, cloud);
+                            else showSessionError(view);
                         }).show());
-        view.findViewById(R.id.account_logout).setOnClickListener(v -> {
-            generation++;
-            demo.logout();
-            startActivity(new Intent(requireContext(), LoginActivity.class)
-                    .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK));
-        });
+        view.findViewById(R.id.account_logout).setOnClickListener(v ->
+                new AlertDialog.Builder(requireContext()).setMessage(R.string.account_logout_confirm)
+                        .setNegativeButton(android.R.string.cancel, null)
+                        .setPositiveButton(R.string.account_logout, (dialog, which) -> {
+                            generation++;
+                            if (!cloud.clear() || !demo.logout()) {
+                                showSessionError(view);
+                                return;
+                            }
+                            startActivity(new Intent(requireContext(), LoginActivity.class)
+                                    .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK));
+                        }).show());
     }
     @Override public void onResume() {
         super.onResume();
@@ -71,43 +81,90 @@ public class AccountFragment extends Fragment {
         TextView info = view.findViewById(R.id.account_info);
         info.setText(R.string.account_loading);
         view.findViewById(R.id.account_retry).setEnabled(false);
+        view.findViewById(R.id.account_retry).setVisibility(View.GONE);
         view.findViewById(R.id.account_disconnect).setVisibility(View.GONE);
-        String format = getString(R.string.project_account_details);
+        view.findViewById(R.id.account_details).setVisibility(View.GONE);
+        view.findViewById(R.id.account_progress).setVisibility(View.VISIBLE);
         io.execute(() -> {
-            String details = null;
+            FullAccount details = null;
             int message = R.string.project_not_connected;
-            boolean connected = false;
+            boolean hasCredential = false;
+            boolean retry = false;
+            long revision = cloud.revision();
+            boolean cleared = false;
             try {
                 DbxCredential credential = cloud.load();
                 if (credential != null && !BuildConfig.DROPBOX_APP_KEY.equals(credential.getAppKey())) {
-                    cloud.clear();
+                    cleared = cloud.clearIfCurrent(revision);
+                    message = cleared ? R.string.project_expired : R.string.session_error;
+                    retry = !cleared;
                 } else if (credential != null) {
-                    connected = true;
+                    hasCredential = true;
                     FullAccount account = new DropboxRepository(DropboxClientFactory.create(credential))
                             .getCurrentAccount();
-                    details = String.format(format, account.getName().getDisplayName());
+                    details = account;
                 }
-            } catch (InvalidAccessTokenException e) {
-                cloud.clear();
-                connected = false;
-                message = R.string.project_expired;
             } catch (DbxException e) {
-                message = R.string.account_error;
+                if (DropboxConnection.isAuthorizationFailure(e)) {
+                    cleared = cloud.clearIfCurrent(revision);
+                    hasCredential = false;
+                    message = cleared ? R.string.project_expired : R.string.session_error;
+                    retry = !cleared;
+                } else {
+                    message = R.string.account_error;
+                    retry = true;
+                }
             } catch (GeneralSecurityException | IOException e) {
-                cloud.clear();
-                connected = false;
+                cleared = cloud.clearIfCurrent(revision);
+                hasCredential = false;
                 message = R.string.session_error;
+                retry = true;
+            } catch (RuntimeException e) {
+                message = R.string.account_error;
+                retry = true;
             }
-            String result = details;
+            FullAccount result = details;
             int error = message;
-            boolean hasConnection = connected;
+            boolean canDisconnect = hasCredential;
+            boolean canRetry = retry || details != null;
+            long completedRevision = revision + (cleared ? 1 : 0);
             main.post(() -> {
-                if (request != generation || getView() != view) return;
-                if (result != null) info.setText(result); else info.setText(error);
+                if (request != generation || getView() != view
+                        || new DemoAuthManager(requireContext()).currentUsername() == null) {
+                    return;
+                }
+                if (cloud.revision() != completedRevision) {
+                    load(view, cloud);
+                    return;
+                }
+                view.findViewById(R.id.account_progress).setVisibility(View.GONE);
+                if (result != null) {
+                    info.setText(R.string.account_connected);
+                    view.findViewById(R.id.account_details).setVisibility(View.VISIBLE);
+                    ((TextView) view.findViewById(R.id.cloud_name)).setText(result.getName().getDisplayName());
+                    ((TextView) view.findViewById(R.id.cloud_email)).setText(getString(
+                            result.getEmailVerified() ? R.string.account_email_verified : R.string.account_email_unverified,
+                            result.getEmail()));
+                    int plan = result.getAccountType() == AccountType.BASIC ? R.string.account_plan_basic
+                            : result.getAccountType() == AccountType.PRO ? R.string.account_plan_pro
+                            : result.getAccountType() == AccountType.BUSINESS ? R.string.account_plan_business : R.string.account_plan_other;
+                    ((TextView) view.findViewById(R.id.cloud_plan)).setText(plan);
+                    ((TextView) view.findViewById(R.id.cloud_id)).setText(result.getAccountId());
+                } else info.setText(error);
+                ((TextView) view.findViewById(R.id.account_connect)).setText(
+                        canDisconnect ? R.string.account_reconnect : R.string.project_setup);
                 view.findViewById(R.id.account_retry).setEnabled(true);
-                view.findViewById(R.id.account_disconnect).setVisibility(hasConnection ? View.VISIBLE : View.GONE);
+                view.findViewById(R.id.account_retry).setVisibility(canRetry ? View.VISIBLE : View.GONE);
+                view.findViewById(R.id.account_disconnect).setVisibility(canDisconnect ? View.VISIBLE : View.GONE);
             });
         });
+    }
+    private void showSessionError(View view) {
+        view.findViewById(R.id.account_progress).setVisibility(View.GONE);
+        view.findViewById(R.id.account_details).setVisibility(View.GONE);
+        view.findViewById(R.id.account_retry).setVisibility(View.VISIBLE);
+        view.findViewById(R.id.account_retry).setEnabled(true);
+        ((TextView) view.findViewById(R.id.account_info)).setText(R.string.session_error);
     }
     @Override public void onDestroyView() {
         generation++;
