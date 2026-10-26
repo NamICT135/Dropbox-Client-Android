@@ -53,7 +53,7 @@ Nếu mạng yếu, ưu tiên bước 1–4 và dùng file nhỏ. Không khẳng
 
 **“Login cục bộ có phải Dropbox login không?”** Không. Login cục bộ chỉ mở app trên thiết bị. Dropbox OAuth là bước cấp quyền riêng cho API. Vì vậy đổi username cục bộ không đổi tài khoản Dropbox đang kết nối.
 
-**“Tại sao không giống toàn bộ app Dropbox chính thức?”** Nhóm chọn Search và Preview từ các ý tưởng của [Dropbox Mobile](https://www.dropbox.com/mobile), vì phù hợp phạm vi App Folder và kiến thức môn học. Chia sẻ link cần scope bổ sung; scan, sao lưu ảnh và đồng bộ offline cần kiến trúc, quyền và kiểm thử riêng, nên chưa đưa vào bài này.
+**“Tại sao không giống toàn bộ app Dropbox chính thức?”** [Dropbox Mobile](https://www.dropbox.com/mobile) giới thiệu truy cập tệp và xem trước nội dung. Nhóm chọn Preview từ hướng đó và thêm Search theo kế hoạch nhóm, vì cả hai phù hợp phạm vi App Folder và kiến thức môn học. Chia sẻ link cần scope bổ sung; scan, sao lưu ảnh và đồng bộ offline cần kiến trúc, quyền và kiểm thử riêng, nên chưa đưa vào bài này.
 
 ## 6. Kết luận (20 giây)
 
