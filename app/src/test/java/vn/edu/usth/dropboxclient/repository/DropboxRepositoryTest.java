@@ -4,6 +4,8 @@ import com.dropbox.core.DbxRequestConfig;
 import com.dropbox.core.InvalidAccessTokenException;
 import com.dropbox.core.http.HttpRequestor;
 import com.dropbox.core.v2.DbxClientV2;
+import com.dropbox.core.v2.files.FolderMetadata;
+import com.dropbox.core.v2.files.ListFolderResult;
 import com.dropbox.core.v2.users.FullAccount;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -64,5 +66,24 @@ public class DropboxRepositoryTest {
         StubRequestor transport = new StubRequestor(401,
                 "{\"error_summary\":\"invalid_access_token/\",\"error\":{\".tag\":\"invalid_access_token\"}}");
         assertThrows(InvalidAccessTokenException.class, () -> repository(transport).getCurrentAccount());
+    }
+
+    @Test public void listsRootAndUsesCursorForNextPage() throws Exception {
+        StubRequestor first = new StubRequestor(200,
+                "{\"entries\":[{\".tag\":\"folder\",\"name\":\"Lớp\",\"path_lower\":\"/lớp\","
+                        + "\"path_display\":\"/Lớp\",\"id\":\"id:folder1\"}],"
+                        + "\"cursor\":\"next-page\",\"has_more\":true}");
+        ListFolderResult page = repository(first).listFolder("");
+        assertEquals("https://api.dropboxapi.com/2/files/list_folder", first.requestedUrl);
+        assertTrue(page.getHasMore());
+        assertEquals("next-page", page.getCursor());
+        assertTrue(page.getEntries().get(0) instanceof FolderMetadata);
+        assertEquals("Lớp", page.getEntries().get(0).getName());
+
+        StubRequestor second = new StubRequestor(200,
+                "{\"entries\":[],\"cursor\":\"done\",\"has_more\":false}");
+        ListFolderResult finalPage = repository(second).continueListFolder(page.getCursor());
+        assertEquals("https://api.dropboxapi.com/2/files/list_folder/continue", second.requestedUrl);
+        assertFalse(finalPage.getHasMore());
     }
 }
