@@ -19,11 +19,19 @@ A local app account is required to open Files. A group member connects Dropbox o
 
 `TransferActivity -> TransferViewModel -> DropboxTransferFactory -> DropboxTransferService -> DropboxRepository -> DbxClientV2 -> Dropbox API`
 
-The Android document picker supplies content URIs. Provider queries, credential loading and network/stream I/O run on a worker executor. Preview streams a bounded file into app-private cache, then `FileProvider` grants the viewer temporary read access. Download obtains the server response before opening the local destination, so a server rejection cannot truncate an existing file. A failure after writing starts can still leave a partial local file; choose a new destination when retrying.
+The Android document picker supplies content URIs. Provider queries, credential loading and network/stream I/O run on a worker executor. Preview checks metadata and actual streamed bytes against a 20 MiB limit, then `FileProvider` grants the viewer temporary read access. Cached previews older than 24 hours are removed before another preview; recent copies remain available to viewers. Opening a file from Search derives its parent folder for the transfer screen. Download obtains the server response before opening the local destination, so a server rejection cannot truncate an existing file. A failure after writing starts can still leave a partial local file; choose a new destination when retrying.
 
 ## Automated checks and limits
 
-Run `.\gradlew.bat assembleDebug assembleDebugAndroidTest testDebugUnitTest lintDebug`. Unit and isolated device tests use local fixtures or an in-memory Dropbox transport. The opt-in `LiveDropboxSearchTest` passed a read-only search against the current Dropbox API without printing account or file details. The earlier opt-in `LiveDropboxTransferTest` passed a real account lookup, folder listing, small upload, download and exact byte comparison on Pixel 6. These live results verify the API routes, not every picker or viewer interaction in the current UI.
+Run `.\gradlew.bat assembleDebug assembleDebugAndroidTest testDebugUnitTest lintDebug`. On 26 October 2026 the builds and 41 unit tests passed; lint reported 0 errors and 8 warnings. On Pixel 10, 19 isolated device tests passed and 4 opt-in live tests were intentionally skipped. `TransferFlowTest` covers picker cancellation, invalid/unsupported paths, missing connections, and preserving the file's parent folder across recreation. `DropboxTransferServiceIoTest` covers exact bytes, rejected downloads preserving the destination, private content URIs, and preview limits even when actual bytes exceed reported size.
+
+`LiveDropboxUiTest` passed **1/1 on authorized Pixel 6 on 26 October 2026**. It is opt-in and drives Files → upload → download → Search → preview with the real Dropbox API and compares downloaded bytes. System picker results and the viewer launch are intercepted with deterministic content URIs, so this verifies app callbacks, file streams and API integration, not manual navigation inside Android's picker or rendering inside a third-party viewer. Each run leaves a uniquely named tiny `ui_acceptance_*.png` cloud fixture; temporary local files and the test's local account are removed, and the previous local session is restored. Existing Dropbox credentials and files are preserved. Manual steps above remain necessary for choosing real documents and confirming the installed viewer renders them.
+
+After installing matching app and test APKs with `adb install -r`, run only the live UI test on the authorized device:
+
+```text
+adb -s DEVICE_SERIAL shell am instrument -w -r -e class vn.edu.usth.dropboxclient.LiveDropboxUiTest -e liveDropboxUi true vn.edu.usth.dropboxclient.test/androidx.test.runner.AndroidJUnitRunner
+```
 
 For an authorized device, install APK updates with `adb install -r` and invoke the instrumentation runner directly. The Gradle connected-test runner previously uninstalled the app during cleanup, which would remove the device's saved Dropbox connection.
 

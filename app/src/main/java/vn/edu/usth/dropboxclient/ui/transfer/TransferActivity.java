@@ -82,10 +82,13 @@ public class TransferActivity extends AppCompatActivity {
             return insets;
         });
         model = new ViewModelProvider(this).get(TransferViewModel.class);
-        folderPath = getIntent().getStringExtra(EXTRA_FOLDER_PATH);
-        if (folderPath == null) folderPath = "";
-        dropboxPathInput = findViewById(R.id.transfer_path);
         String initialPath = getIntent().getStringExtra(EXTRA_DOWNLOAD_PATH);
+        folderPath = getIntent().getStringExtra(EXTRA_FOLDER_PATH);
+        if (folderPath == null) {
+            int slash = initialPath == null ? -1 : initialPath.lastIndexOf('/');
+            folderPath = slash <= 0 ? "" : initialPath.substring(0, slash);
+        }
+        dropboxPathInput = findViewById(R.id.transfer_path);
         if (state != null) {
             pendingDownloadPath = state.getString(KEY_PENDING_PATH);
             pickerPending = state.getBoolean(KEY_PICKER_PENDING);

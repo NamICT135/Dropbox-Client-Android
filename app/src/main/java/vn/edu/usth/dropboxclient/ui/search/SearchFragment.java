@@ -75,7 +75,7 @@ public class SearchFragment extends Fragment {
         if (state != null) {
             query = state.getString(KEY_QUERY, "");
             input.setText(query);
-            if (!query.isEmpty()) load(false);
+            search(query);
         } else showState(R.string.search_ready, false, false);
     }
 
@@ -164,7 +164,8 @@ public class SearchFragment extends Fragment {
         if (content == null) return;
         TextView status = content.findViewById(R.id.search_status);
         status.setText(message == R.string.search_count
-                ? getString(message, entries.size()) : getString(message));
+                ? getResources().getQuantityString(R.plurals.search_results_count,
+                        entries.size(), entries.size()) : getString(message));
         status.setTextColor(requireContext().getColor(error ? R.color.status_error : R.color.text_muted));
         content.findViewById(R.id.search_results).setVisibility(hasResults ? View.VISIBLE : View.GONE);
     }

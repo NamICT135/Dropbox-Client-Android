@@ -100,6 +100,14 @@ public class TransferViewModel extends AndroidViewModel {
                 File directory = new File(app.getCacheDir(), "previews");
                 if (!directory.isDirectory() && !directory.mkdirs())
                     throw new IOException("Cannot create preview cache");
+                // Keep recent previews readable by external viewers; expire older copies.
+                File[] cached = directory.listFiles();
+                long cutoff = System.currentTimeMillis() - 24L * 60 * 60 * 1000;
+                if (cached != null) for (File candidate : cached) {
+                    if (candidate.isFile() && candidate.getName().startsWith("preview-")
+                            && candidate.lastModified() < cutoff && !candidate.delete())
+                        throw new IOException("Cannot remove expired preview cache");
+                }
                 String suffix = path.substring(path.lastIndexOf('.')).toLowerCase(Locale.ROOT);
                 file = File.createTempFile("preview-", suffix, directory);
                 service.downloadPreview(path, file, MAX_PREVIEW_BYTES);

@@ -15,6 +15,7 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.io.FilterOutputStream;
 
 public class DropboxTransferService {
 
@@ -94,7 +95,22 @@ public class DropboxTransferService {
         if (destination == null || maxBytes <= 0) throw new IllegalArgumentException("Invalid preview destination");
         try (DbxDownloader<FileMetadata> download = repository.openDownload(dropboxPath)) {
             if (download.getResult().getSize() > maxBytes) throw new PreviewTooLargeException();
-            try (OutputStream output = new FileOutputStream(destination)) {
+            // Enforce the limit on actual bytes as well as server metadata.
+            try (OutputStream output = new FilterOutputStream(new FileOutputStream(destination)) {
+                private long written;
+
+                @Override public void write(int value) throws IOException {
+                    if (written >= maxBytes) throw new PreviewTooLargeException();
+                    out.write(value);
+                    written++;
+                }
+
+                @Override public void write(byte[] buffer, int offset, int length) throws IOException {
+                    if (length > maxBytes - written) throw new PreviewTooLargeException();
+                    out.write(buffer, offset, length);
+                    written += length;
+                }
+            }) {
                 return download.download(output);
             }
         }

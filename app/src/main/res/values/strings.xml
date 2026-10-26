@@ -10,7 +10,11 @@
     <string name="search_enter_query">Enter a file or folder name first.</string>
     <string name="search_loading">Searching Dropbox…</string>
     <string name="search_empty">No matching files or folders.</string>
-    <string name="search_count">%1$d results. Tap a folder to browse or a file to preview or download.</string>
+    <string name="search_count">Search results</string>
+    <plurals name="search_results_count">
+        <item quantity="one">%1$d result. Tap a folder to browse or a file to preview or download.</item>
+        <item quantity="other">%1$d results. Tap a folder to browse or a file to preview or download.</item>
+    </plurals>
     <string name="search_error">Search failed. Check the connection and files.metadata.read permission, then try again.</string>
     <string name="search_more_error">Could not load more results. Try again.</string>
     <string name="files_path">Dropbox: %1$s</string>

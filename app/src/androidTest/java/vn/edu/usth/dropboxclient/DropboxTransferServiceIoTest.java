@@ -32,8 +32,13 @@ public class DropboxTransferServiceIoTest {
             + "\"server_modified\":\"2026-10-22T00:00:00Z\",\"rev\":\"123456789\",\"size\":5}";
     private static final class Transport extends HttpRequestor {
         final boolean rejectDownload;
+        final String metadata;
         byte[] uploaded;
-        Transport(boolean rejectDownload) { this.rejectDownload = rejectDownload; }
+        Transport(boolean rejectDownload) { this(rejectDownload, METADATA); }
+        Transport(boolean rejectDownload, String metadata) {
+            this.rejectDownload = rejectDownload;
+            this.metadata = metadata;
+        }
         @Override public Response doGet(String url, Iterable<Header> headers) { throw new AssertionError("Expected POST"); }
         @Override public Uploader startPut(String url, Iterable<Header> headers) { throw new AssertionError("Expected POST"); }
         @Override public Uploader startPost(String url, Iterable<Header> headers) {
@@ -51,7 +56,7 @@ public class DropboxTransferServiceIoTest {
                                     Collections.emptyMap());
                         }
                         return new Response(200, new ByteArrayInputStream(CONTENT),
-                                Collections.singletonMap("Dropbox-API-Result", Collections.singletonList(METADATA)));
+                                Collections.singletonMap("Dropbox-API-Result", Collections.singletonList(metadata)));
                     }
                     assertTrue(url.endsWith("/files/upload"));
                     uploaded = body.toByteArray();
@@ -106,6 +111,18 @@ public class DropboxTransferServiceIoTest {
             Uri uri = FileProvider.getUriForFile(context,
                     context.getPackageName() + ".preview", output.toFile());
             assertEquals("content", uri.getScheme());
+        } finally { Files.deleteIfExists(output); }
+    }
+
+    @Test public void previewRejectsActualBytesExceedingReportedSize() throws Exception {
+        Context context = InstrumentationRegistry.getInstrumentation().getTargetContext();
+        Path output = Files.createTempFile(context.getCacheDir().toPath(), "preview-limit-", ".bin");
+        try {
+            Transport transport = new Transport(false, METADATA.replace("\"size\":5", "\"size\":1"));
+            DropboxTransferService service = service(context, transport);
+            assertThrows(DropboxTransferService.PreviewTooLargeException.class,
+                    () -> service.downloadPreview("/roundtrip.bin", output.toFile(), 4));
+            assertTrue(Files.size(output) <= 4);
         } finally { Files.deleteIfExists(output); }
     }
 }

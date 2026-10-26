@@ -10,7 +10,7 @@ A six-member USTH Mobile Application Development project built with **Java and X
 - Search the authorized App Folder with Dropbox `files.searchV2`, open a matching folder in Files, and load more search results.
 - Create, rename and delete folders with validation, conflict feedback and delete confirmation.
 - Upload from Android's document picker into the folder currently open in **Files**. Tap a file for details and use **Download from Dropbox** to choose a local save destination.
-- Preview JPG, PNG, WEBP, GIF and PDF files up to 20 MB in an installed Android viewer. The app shares only a temporary read-only content URI for the cached preview.
+- Preview JPG, PNG, WEBP, GIF and PDF files up to 20 MiB in an installed Android viewer. The app checks both reported size and actual downloaded bytes, and shares only a temporary read-only content URI. Preview copies older than 24 hours are removed when preparing another preview.
 
 The local account is a coursework entry mechanism, not a production identity service or a separate Dropbox account for each user. Local accounts on the same device share its authorized project App Folder.
 
@@ -45,8 +45,10 @@ LoginActivity (local account)
 
 ## Verification and limits
 
-On 26 October 2026, the integrated source built successfully: **41/41 unit tests**, **6/6 selected device tests** on Pixel 10, and lint with **0 errors, 8 warnings**. A read-only live Search API test and a Search screen query passed on Pixel 6; the updated Account screen showed no profile name, email or Dropbox account ID. Earlier live checks on Pixel 6 verified account lookup, folder listing, folder create/rename/delete, a small upload and exact-byte download through the Dropbox API. The new preview UI and Files-to-transfer picker flow still need a fresh end-to-end check on a device authorized with the group Dropbox account. See [transfer acceptance](docs/transfer-review.md).
+On 26 October 2026, the updated source passed the app/test APK builds, **41/41 unit tests**, and lint with **0 errors, 8 warnings**. The Pixel 10 instrumentation suite reported **19 passed, 4 intentionally skipped live tests, 0 failures**. Coverage includes local login/logout, folder and transfer services, exact-byte streams, preview limits and private content URIs, picker cancellation, invalid paths, unsupported previews, missing Dropbox connections, and transfer-screen recreation.
 
-Use small files. Preview requires an installed viewer, is limited to 20 MB and caches a temporary copy in app storage. Large upload sessions, background recovery, progress percentages, and automatic retry of uncertain writes are outside this MVP. A failure after a download starts writing may leave a partial destination. Each newly installed device must complete its own Dropbox authorization.
+The opt-in UI/API acceptance test also passed on authorized Pixel 6: **Files → upload → download → Search → preview**, using the real Dropbox API and exact-byte comparison. Picker results and viewer launch were intercepted by the test; manually choosing a document and rendering it in an installed viewer remain manual acceptance steps. Earlier live checks verified account lookup, folder listing and folder create/rename/delete. See [transfer acceptance](docs/transfer-review.md). Account intentionally shows only the local username and connection state.
+
+Use small files. Preview requires an installed viewer, is limited to 20 MiB and caches a temporary copy in app storage. Large upload sessions, background recovery, progress percentages, and automatic retry of uncertain writes are outside this MVP. A failure after a download starts writing may leave a partial destination. Each newly installed device must complete its own Dropbox authorization.
 
 [Team development without shared credentials](docs/team-development.md) explains how members build and test without sharing the project's Dropbox login.
