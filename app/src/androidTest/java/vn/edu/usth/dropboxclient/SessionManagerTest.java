@@ -22,7 +22,7 @@ public class SessionManagerTest {
             }
         };
     }
-    @Test public void fullLogoutClearsDropboxAndDemoReloginNeedsOAuth() throws Exception {
+    @Test public void demoLogoutPreservesProjectConnection() throws Exception {
         Context context = isolatedContext();
         SessionManager cloud = new SessionManager(context);
         DemoAuthManager demo = new DemoAuthManager(context);
@@ -32,15 +32,13 @@ public class SessionManagerTest {
             cloud.clear();
             cloud.save(new DbxCredential(marker));
             demo.register("student", password);
-            long oldRevision = cloud.revision();
-            assertTrue(cloud.clear());
-            demo.logout();
+            long beforeLogout = cloud.revision();
+            assertTrue(demo.logout());
             assertNull(demo.currentUsername());
-            assertNull(new SessionManager(context).load());
-            assertFalse(cloud.saveIfCurrent(new DbxCredential(UUID.randomUUID().toString()),
-                    oldRevision));
+            assertEquals(marker, new SessionManager(context).load().getAccessToken());
+            assertEquals(beforeLogout, cloud.revision());
             assertEquals(DemoAuthManager.Result.SUCCESS, demo.login("student", password));
-            assertNull(new SessionManager(context).load());
+            assertEquals(marker, new SessionManager(context).load().getAccessToken());
         } finally {
             cloud.clear();
             context.getSharedPreferences("demo_accounts", Context.MODE_PRIVATE).edit().clear().commit();

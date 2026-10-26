@@ -63,7 +63,7 @@ public class AccountFragment extends Fragment {
                         .setNegativeButton(android.R.string.cancel, null)
                         .setPositiveButton(R.string.account_logout, (dialog, which) -> {
                             generation++;
-                            if (!cloud.clear() || !demo.logout()) {
+                            if (!demo.logout()) {
                                 showSessionError(view);
                                 return;
                             }

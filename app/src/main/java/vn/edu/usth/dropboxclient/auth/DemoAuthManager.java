@@ -95,7 +95,7 @@ public final class DemoAuthManager {
         }
     }
 
-    /** Removes only the demo session. The Account screen also clears Dropbox on full logout. */
+    /** Removes only the demo session; the project Dropbox connection is managed separately. */
     public boolean logout() { return preferences.edit().remove("current_user").commit(); }
 
     private static String normalize(String username) { return username.trim().toLowerCase(Locale.ROOT); }
