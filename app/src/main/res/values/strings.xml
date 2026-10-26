@@ -13,6 +13,7 @@
     <string name="files_page_error">Could not load more items. Try again.</string>
     <string name="files_folder_item">Folder: %1$s</string>
     <string name="files_file_item">File: %1$s</string>
+    <string name="files_file_details">Path: %1$s\nSize (bytes): %2$d</string>
     <string name="login_title">Dropbox Client</string>
     <string name="auth_setup_required">Configure DROPBOX_APP_KEY in local.properties, then rebuild the app.</string>
     <string name="auth_waiting">Waiting for Dropbox authorizationâ€¦</string>

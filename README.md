@@ -6,7 +6,7 @@ USTH Mobile Application Development group project. The app is written in **Java 
 
 - Register and log in with a local demo username and password; no personal email is needed for this step. Demo logout does not disconnect project storage.
 - Connect a Dropbox account through **Account > Set up project storage**. The app verifies the account through `DropboxRepository.getCurrentAccount()` and shows the returned display name. **Disconnect project storage** removes the saved connection from that device.
-- **Files** reads the connected project's App Folder through `DropboxRepository`. It lists files and folders, opens folders, moves to the parent, refreshes, loads additional pages and shows loading, empty and error states with retry. You can create a folder in the current location or long press a listed folder to rename or delete it. Delete requires confirmation.
+- **Files** reads the connected project's App Folder through `DropboxRepository`. It lists files and folders, opens folders, moves to the parent, refreshes, loads additional pages and shows loading, empty and error states with retry. Tap a file to see its Dropbox path and size. You can create a folder in the current location or long press a listed folder to rename or delete it. Delete requires confirmation.
 - In debug builds, open **Account > Test upload / download** to select a small local file and a download destination with Android's document pickers. The transfer service uses `DropboxRepository` for Dropbox API calls.
 
 The Dropbox connection is shared by local demo users on the same device. A team member can build the app and develop the UI without the project's Dropbox email, password or token. A new device needs its own Dropbox authorization before it can call the real API.
@@ -17,7 +17,7 @@ The Dropbox connection is shared by local demo users on the same device. A team 
 2. Let Android Studio create the ignored `local.properties` file for your SDK path. Local demo login and unit tests work without a Dropbox App key.
 3. For real Dropbox access, add `DROPBOX_APP_KEY=your_app_key` to the root `local.properties` or set the environment variable, then rebuild. The App key is a public application identifier; never commit passwords, tokens or the App secret.
 4. Run the app on an emulator or device. Register a demo username (3-24 letters, digits or underscores) and a test password (8-128 characters). From Account, connect project storage and approve the Dropbox request.
-5. Open **Files** to browse the connected project's App Folder. Use **Up** for the parent folder, **Refresh** to reload and **Load more** when Dropbox returns another page. Use **Create folder** or long press a folder for **Rename** and **Delete**. For transfers, use **Account > Test upload / download** in a debug build with a small disposable file. [Transfer acceptance and limitations](docs/transfer-review.md) explains the test commands.
+5. Open **Files** to browse the connected project's App Folder. Tap a file for its path and size; use **Up** for the parent folder, **Refresh** to reload and **Load more** when Dropbox returns another page. Use **Create folder** or long press a folder for **Rename** and **Delete**. For transfers, use **Account > Test upload / download** in a debug build with a small disposable file. [Transfer acceptance and limitations](docs/transfer-review.md) explains the test commands.
 
 On Windows, run the build and local tests with:
 
@@ -48,6 +48,8 @@ On 25 October 2026, the File Browser branch passed `assembleDebug`, `testDebugUn
 
 The folder operations PR passed `assembleDebug`, `testDebugUnitTest` (31/31) and `lintDebug` (0 errors, 9 warnings). On the same Pixel 6, **Files** rejected an empty name, created and renamed a disposable folder through the real Dropbox API, preserved it after **Cancel**, detected a duplicate-name conflict, and deleted only the disposable folders after confirmation. The root listing refreshed after each successful action. These checks do not cover every offline, rotation or rate-limit case.
 
+On 26 October 2026, the file browser integration passed `assembleDebug`, `testDebugUnitTest` (31/31) and `lintDebug` (0 errors, 9 warnings). On Pixel 6 API 34, tapping a real Dropbox file showed its path and byte size. A disposable empty folder opened with the empty state, **Up** returned to the root, and the disposable folder was deleted after the check.
+
 The isolated tests use local fixtures or an in-memory HTTP transport; the opt-in test above is the evidence for real Dropbox API access. See [transfer test details](docs/transfer-review.md). Do not run Gradle's `connectedDebugAndroidTest` on the authorized demo device: its cleanup was observed uninstalling the app. The linked guide shows how to run instrumentation directly while preserving the connection.
 
 ## Still to complete
@@ -55,7 +57,7 @@ The isolated tests use local fixtures or an in-memory HTTP transport; the opt-in
 - [ ] A second team member performs a clean clone, Gradle sync, build and run.
 - [ ] OAuth cancellation, revoked/expired authorization, token refresh and disconnect/reconnect are checked end to end on a device.
 - [ ] The debug transfer screen is checked manually with both document pickers, cancellation, offline failure and retry. The live API test does not cover every picker interaction.
-- [ ] Verify nested/empty folders, parent navigation, pagination and Vietnamese filenames on an authorized device. Root listing and Refresh have been checked.
+- [ ] Verify deeper nested folders, pagination and Vietnamese filenames on an authorized device. Root listing, one empty folder and parent navigation have been checked.
 - [ ] Repeat folder operations with offline access, revoked permissions, rotation during a request and a nonempty disposable folder.
 - [ ] Rapid taps, rate limits, rotation during active work and process restart receive full regression checks.
 - [ ] The full MVP is integrated, the final demo is rehearsed and the presentation is complete.

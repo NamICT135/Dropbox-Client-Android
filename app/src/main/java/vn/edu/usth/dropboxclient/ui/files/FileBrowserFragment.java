@@ -18,6 +18,7 @@ import com.dropbox.core.InvalidAccessTokenException;
 import com.dropbox.core.oauth.DbxCredential;
 import com.dropbox.core.v2.files.CreateFolderErrorException;
 import com.dropbox.core.v2.files.DeleteErrorException;
+import com.dropbox.core.v2.files.FileMetadata;
 import com.dropbox.core.v2.files.FolderMetadata;
 import com.dropbox.core.v2.files.ListFolderResult;
 import com.dropbox.core.v2.files.Metadata;
@@ -247,6 +248,15 @@ public class FileBrowserFragment extends Fragment implements
         status.setVisibility(View.VISIBLE);
     }
 
+    private void showFileDetails(FileMetadata file) {
+        String filePath = file.getPathDisplay() == null ? file.getName() : file.getPathDisplay();
+        new AlertDialog.Builder(requireContext())
+                .setTitle(file.getName())
+                .setMessage(getString(R.string.files_file_details, filePath, file.getSize()))
+                .setPositiveButton(android.R.string.ok, null)
+                .show();
+    }
+
     private int folderErrorMessage(Exception error) {
         if (error instanceof InvalidAccessTokenException) return R.string.project_expired;
         if (error instanceof CreateFolderErrorException) {
@@ -310,11 +320,15 @@ public class FileBrowserFragment extends Fragment implements
             boolean folder = item instanceof FolderMetadata;
             holder.label.setText(getString(folder ? R.string.files_folder_item : R.string.files_file_item,
                     item.getName()));
-            holder.label.setOnClickListener(folder ? v -> {
+            holder.label.setOnClickListener(v -> {
                 if (actionBusy) return;
-                String folderPath = item.getPathDisplay();
-                if (folderPath != null) openFolder(folderPath);
-            } : null);
+                if (folder) {
+                    String folderPath = item.getPathDisplay();
+                    if (folderPath != null) openFolder(folderPath);
+                } else if (item instanceof FileMetadata) {
+                    showFileDetails((FileMetadata) item);
+                }
+            });
             holder.label.setOnLongClickListener(folder ? v -> {
                 if (busy || actionBusy || actionNeedsRefresh) return true;
                 String folderPath = item.getPathDisplay();
