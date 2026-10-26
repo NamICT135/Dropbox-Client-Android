@@ -2,6 +2,7 @@ package vn.edu.usth.dropboxclient.ui.account;
 
 import android.content.Intent;
 import android.os.Bundle;
+import android.view.View;
 import android.widget.TextView;
 import androidx.activity.EdgeToEdge;
 import androidx.activity.OnBackPressedCallback;
@@ -46,6 +47,7 @@ public class ProjectDropboxActivity extends AppCompatActivity {
             back.setEnabled(result.busy);
             findViewById(R.id.project_connect).setEnabled(!result.busy);
             findViewById(R.id.project_back).setEnabled(!result.busy);
+            findViewById(R.id.project_progress).setVisibility(result.busy ? View.VISIBLE : View.GONE);
             if (result.connected) { finish(); return; }
             if (result.message != 0) status.setText(result.message);
         });

@@ -4,7 +4,7 @@ import android.os.Bundle;
 import android.content.Intent;
 import vn.edu.usth.dropboxclient.auth.DemoAuthManager;
 import vn.edu.usth.dropboxclient.ui.login.LoginActivity;
-import android.widget.RadioGroup;
+import com.google.android.material.bottomnavigation.BottomNavigationView;
 
 import androidx.activity.EdgeToEdge;
 import androidx.appcompat.app.AppCompatActivity;
@@ -51,7 +51,7 @@ public class MainActivity extends AppCompatActivity {
                 }
         );
 
-        RadioGroup navigation = findViewById(R.id.navigation);
+        BottomNavigationView navigation = findViewById(R.id.navigation);
 
         if (savedInstanceState != null) {
             selectedTab = savedInstanceState.getInt(
@@ -60,19 +60,22 @@ public class MainActivity extends AppCompatActivity {
             );
         }
 
-        navigation.check(selectedTab);
+        navigation.setSelectedItemId(selectedTab);
 
         // FragmentManager tự khôi phục Fragment khi Activity được tạo lại.
         if (savedInstanceState == null) {
             showTab(selectedTab);
         }
 
-        navigation.setOnCheckedChangeListener((group, checkedId) -> {
+        navigation.setOnItemSelectedListener(item -> {
+            int checkedId = item.getItemId();
             if (checkedId == R.id.nav_files
                     || checkedId == R.id.nav_account) {
                 selectedTab = checkedId;
                 showTab(checkedId);
+                return true;
             }
+            return false;
         });
     }
 

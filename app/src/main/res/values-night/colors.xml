@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="brand_blue">#A9C7FF</color>
+    <color name="screen_background">#101827</color>
+    <color name="surface_card">#1C2738</color>
+    <color name="text_muted">#B7C3D4</color>
+    <color name="panel_outline">#37445A</color>
+    <color name="status_error">#FFB4AB</color>
+</resources>

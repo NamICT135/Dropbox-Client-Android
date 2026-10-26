@@ -26,7 +26,6 @@ import vn.edu.usth.dropboxclient.auth.DropboxConnection;
 import vn.edu.usth.dropboxclient.auth.SessionManager;
 import vn.edu.usth.dropboxclient.repository.DropboxRepository;
 import vn.edu.usth.dropboxclient.ui.login.LoginActivity;
-import vn.edu.usth.dropboxclient.ui.transfer.TransferTestActivity;
 
 public class AccountFragment extends Fragment {
     private ExecutorService io;
@@ -42,11 +41,6 @@ public class AccountFragment extends Fragment {
                 R.string.account_profile_details, demo.currentDisplayName(),
                 demo.currentEmail().isEmpty() ? getString(R.string.account_email_unset) : demo.currentEmail()));
         SessionManager cloud = new SessionManager(requireContext());
-        if (BuildConfig.DEBUG) {
-            view.findViewById(R.id.account_transfer_debug).setVisibility(View.VISIBLE);
-            view.findViewById(R.id.account_transfer_debug).setOnClickListener(v ->
-                    startActivity(new Intent(requireContext(), TransferTestActivity.class)));
-        }
         view.findViewById(R.id.account_retry).setOnClickListener(v -> load(view, cloud));
         view.findViewById(R.id.account_connect).setOnClickListener(v ->
                 startActivity(new Intent(requireContext(), ProjectDropboxActivity.class)));
