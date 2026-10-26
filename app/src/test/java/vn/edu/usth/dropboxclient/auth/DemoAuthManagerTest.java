@@ -77,4 +77,38 @@ public class DemoAuthManagerTest {
                 () -> demo.register("student", UUID.randomUUID().toString().toCharArray()));
         assertNull(demo.currentUsername());
     }
+    @Test public void profileSurvivesLogoutAndIsScopedToUser() throws Exception {
+        SharedPreferences store = preferences(true);
+        DemoAuthManager demo = new DemoAuthManager(store);
+        char[] secret = UUID.randomUUID().toString().toCharArray();
+        assertEquals(DemoAuthManager.Result.SUCCESS,
+                demo.register("alice", secret, " An ", " Nguyen ", " an@example.test "));
+        assertEquals("An Nguyen", demo.currentDisplayName());
+        assertEquals("an@example.test", demo.currentEmail());
+        assertTrue(demo.logout());
+        assertEquals("", demo.currentDisplayName());
+        assertEquals("", demo.currentEmail());
+        demo.register("bob", secret);
+        assertEquals("bob", demo.currentDisplayName());
+        assertEquals("", demo.currentEmail());
+        demo.logout();
+        DemoAuthManager restored = new DemoAuthManager(store);
+        restored.login("ALICE", secret);
+        assertEquals("An Nguyen", restored.currentDisplayName());
+        assertEquals("an@example.test", restored.currentEmail());
+    }
+    @Test public void invalidProfileDoesNotCreateAnAccount() throws Exception {
+        DemoAuthManager demo = new DemoAuthManager(preferences(true));
+        char[] secret = UUID.randomUUID().toString().toCharArray();
+        assertEquals(DemoAuthManager.Result.INVALID_PROFILE,
+                demo.register("alice", secret, "An", "Nguyen", "invalid-email"));
+        assertNull(demo.currentUsername());
+        assertEquals(DemoAuthManager.Result.SUCCESS, demo.register("alice", secret));
+    }
+    @Test public void failedLogoutReportsFailureAndKeepsSession() throws Exception {
+        DemoAuthManager demo = new DemoAuthManager(preferences(true));
+        demo.register("alice", UUID.randomUUID().toString().toCharArray());
+        assertFalse(new DemoAuthManager(preferences(false)).logout());
+        assertEquals("alice", demo.currentUsername());
+    }
 }

@@ -6,7 +6,7 @@ The debug build provides **Account > Test upload / download**. It uses the exist
 
 1. Enable `account_info.read`, `files.metadata.read`, `files.content.read`, and `files.content.write` in the Developer App and save the change. Do not add `files.metadata.write` for ordinary create/rename/delete operations; those endpoints use `files.content.write`.
 2. Keep the existing Scoped App Folder access type. Paths such as `/test_upload_demo.txt` are relative to the app folder, not the entire Dropbox account. Configure the public App key in ignored `local.properties`; never commit secrets, passwords or tokens.
-3. Run the debug app and log into a local demo user. Use **Account > Set up project storage > Connect project Dropbox**, or the transfer screen's **Connect / renew Dropbox permissions** button. A group member signs into the dedicated project account and grants the updated permissions. Old access/refresh tokens do not automatically gain new scopes; demo logout does not renew Dropbox permissions.
+3. Run the debug app and log into a local demo user. Use **Account > Set up project storage > Connect project Dropbox**, or the transfer screen's **Connect / renew Dropbox permissions** button. A group member signs into the dedicated project account and grants the updated permissions. Old access/refresh tokens do not automatically gain new scopes; demo logout does not renew Dropbox permissions or disconnect project storage.
 4. The app verifies the account before saving its encrypted credential. All local demo users on that device share this connection. Other team members do not need the project's email/password for front-end work and isolated tests.
 
 ## Manual transfer check

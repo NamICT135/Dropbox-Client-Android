@@ -27,12 +27,45 @@ public class SessionManagerTest {
         SessionManager cloud = new SessionManager(context);
         DemoAuthManager demo = new DemoAuthManager(context);
         String marker = UUID.randomUUID().toString();
+        char[] password = UUID.randomUUID().toString().toCharArray();
         try {
+            cloud.clear();
             cloud.save(new DbxCredential(marker));
-            demo.register("student", UUID.randomUUID().toString().toCharArray());
-            demo.logout();
+            demo.register("student", password);
+            long beforeLogout = cloud.revision();
+            assertTrue(demo.logout());
             assertNull(demo.currentUsername());
             assertEquals(marker, new SessionManager(context).load().getAccessToken());
+            assertEquals(beforeLogout, cloud.revision());
+            assertEquals(DemoAuthManager.Result.SUCCESS, demo.login("student", password));
+            assertEquals(marker, new SessionManager(context).load().getAccessToken());
+        } finally {
+            cloud.clear();
+            context.getSharedPreferences("demo_accounts", Context.MODE_PRIVATE).edit().clear().commit();
+        }
+    }
+
+    @Test public void disconnectOnlyClearsDropboxAndInvalidatesOldWork() throws Exception {
+        Context context = isolatedContext();
+        SessionManager cloud = new SessionManager(context);
+        DemoAuthManager demo = new DemoAuthManager(context);
+        try {
+            cloud.clear();
+            demo.register("student", UUID.randomUUID().toString().toCharArray());
+            long oldRevision = cloud.revision();
+            cloud.save(new DbxCredential(UUID.randomUUID().toString()));
+            long loadingRevision = cloud.revision();
+            assertTrue(cloud.clear());
+            assertEquals("student", demo.currentUsername());
+            assertNull(cloud.load());
+            assertFalse(cloud.saveIfCurrent(new DbxCredential(UUID.randomUUID().toString()),
+                    oldRevision));
+            assertFalse(cloud.clearIfCurrent(loadingRevision));
+            assertNull(cloud.load());
+            long beforeOAuth = cloud.revision();
+            long oauthRevision = cloud.beginOAuth();
+            assertFalse(cloud.clearIfCurrent(beforeOAuth));
+            assertTrue(oauthRevision > beforeOAuth);
         } finally {
             cloud.clear();
             context.getSharedPreferences("demo_accounts", Context.MODE_PRIVATE).edit().clear().commit();
@@ -47,6 +80,8 @@ public class SessionManagerTest {
             assertNull(session.load());
             String value = UUID.randomUUID().toString();
             session.save(new DbxCredential(value));
+            assertEquals(value, new SessionManager(context).load().getAccessToken());
+            session.beginOAuth(); // A cancelled attempt leaves the existing connection intact.
             assertEquals(value, new SessionManager(context).load().getAccessToken());
             String encrypted = context.getSharedPreferences("dropbox_session", Context.MODE_PRIVATE)
                     .getString("credential", "");

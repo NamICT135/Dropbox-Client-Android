@@ -28,7 +28,7 @@ public class DemoFlowTest {
         long deadline = SystemClock.uptimeMillis() + 10_000;
         AssertionError last = null;
         do {
-            try { onView(withId(id)).check(matches(withText(text))); return; }
+            try { onView(withId(id)).perform(scrollTo()).check(matches(withText(text))); return; }
             catch (NoMatchingViewException | AssertionError e) { last = new AssertionError(e); }
             SystemClock.sleep(100);
         } while (SystemClock.uptimeMillis() < deadline);
@@ -52,8 +52,9 @@ public class DemoFlowTest {
         char[] password = UUID.randomUUID().toString().toCharArray();
         new DemoAuthManager(context).logout();
         try (ActivityScenario<LoginActivity> ignored = ActivityScenario.launch(LoginActivity.class)) {
-            onView(withId(R.id.demo_username)).perform(replaceText("invalid name"));
-            onView(withId(R.id.demo_password)).perform(replaceText(new String(password)), closeSoftKeyboard());
+            onView(withId(R.id.login_switch)).perform(scrollTo(), click());
+            onView(withId(R.id.demo_username)).perform(scrollTo(), replaceText("invalid name"));
+            onView(withId(R.id.demo_password)).perform(scrollTo(), replaceText(new String(password)), closeSoftKeyboard());
             onView(withId(R.id.button_register)).perform(scrollTo(), click());
             awaitText(R.id.login_status, R.string.demo_invalid_username);
             assertPasswordLength(password.length);
@@ -61,18 +62,23 @@ public class DemoFlowTest {
             onView(withId(R.id.button_register)).perform(scrollTo(), click());
             awaitView(R.id.demo_account);
             onView(withId(R.id.account_logout)).perform(scrollTo(), click());
+            onView(withText(R.string.account_logout)).perform(click());
             awaitView(R.id.demo_username);
-            onView(withId(R.id.demo_username)).perform(replaceText(username));
-            onView(withId(R.id.demo_password)).perform(replaceText(new String(password)), closeSoftKeyboard());
+            onView(withId(R.id.demo_username)).perform(scrollTo(), replaceText(username));
+            onView(withId(R.id.demo_password)).perform(scrollTo(), replaceText(new String(password)), closeSoftKeyboard());
+            onView(withId(R.id.login_switch)).perform(scrollTo(), click());
             onView(withId(R.id.button_register)).perform(scrollTo(), click());
             awaitText(R.id.login_status, R.string.demo_user_exists);
             assertPasswordLength(password.length);
+            onView(withId(R.id.login_switch)).perform(scrollTo(), click());
             onView(withId(R.id.button_continue)).perform(scrollTo(), click());
             awaitView(R.id.demo_account);
             onView(withId(R.id.account_logout)).perform(scrollTo(), click());
+            onView(withText(R.string.account_logout)).perform(click());
         } finally {
             Arrays.fill(password, (char) 0);
-            SharedPreferences.Editor restore = preferences.edit().remove("user." + username);
+            SharedPreferences.Editor restore = preferences.edit().remove("user." + username)
+                    .remove("profile." + username + ".name").remove("profile." + username + ".email");
             if (previousUser == null) restore.remove("current_user"); else restore.putString("current_user", previousUser);
             restore.commit();
         }
@@ -100,9 +106,10 @@ public class DemoFlowTest {
         char[] password = UUID.randomUUID().toString().toCharArray();
         new DemoAuthManager(context).logout();
         try (ActivityScenario<LoginActivity> ignored = ActivityScenario.launch(LoginActivity.class)) {
-            onView(withId(R.id.demo_username)).perform(replaceText(username));
-            onView(withId(R.id.demo_password)).perform(replaceText(new String(password)), closeSoftKeyboard());
-            onView(withId(R.id.button_register)).perform(click());
+            onView(withId(R.id.demo_username)).perform(scrollTo(), replaceText(username));
+            onView(withId(R.id.demo_password)).perform(scrollTo(), replaceText(new String(password)), closeSoftKeyboard());
+            onView(withId(R.id.login_switch)).perform(scrollTo(), click());
+            onView(withId(R.id.button_register)).perform(scrollTo(), click());
             awaitView(R.id.demo_account);
             onView(withId(R.id.demo_account)).check(matches(withText("Demo user: " + username)));
             onView(withId(R.id.account_connect)).perform(scrollTo(), click());
@@ -115,19 +122,59 @@ public class DemoFlowTest {
             onView(withId(R.id.transfer_result)).check(matches(withText(R.string.transfer_invalid_path)));
             onView(withId(R.id.transfer_back)).perform(scrollTo(), click());
             onView(withId(R.id.account_logout)).perform(scrollTo(), click());
+            onView(withText(R.string.account_logout)).perform(click());
             awaitView(R.id.demo_username);
             onView(withId(R.id.demo_username)).check(matches(isDisplayed()));
-            onView(withId(R.id.demo_username)).perform(replaceText(username));
-            onView(withId(R.id.demo_password)).perform(replaceText(new String(password)), closeSoftKeyboard());
-            onView(withId(R.id.button_continue)).perform(click());
+            onView(withId(R.id.demo_username)).perform(scrollTo(), replaceText(username));
+            onView(withId(R.id.demo_password)).perform(scrollTo(), replaceText(new String(password)), closeSoftKeyboard());
+            onView(withId(R.id.button_continue)).perform(scrollTo(), click());
             awaitView(R.id.demo_account);
             onView(withId(R.id.demo_account)).check(matches(withText("Demo user: " + username)));
             onView(withId(R.id.account_logout)).perform(scrollTo(), click());
+            onView(withText(R.string.account_logout)).perform(click());
             awaitView(R.id.demo_username);
             onView(withId(R.id.demo_username)).check(matches(isDisplayed()));
         } finally {
             Arrays.fill(password, (char) 0);
-            SharedPreferences.Editor restore = preferences.edit().remove("user." + username);
+            SharedPreferences.Editor restore = preferences.edit().remove("user." + username)
+                    .remove("profile." + username + ".name").remove("profile." + username + ".email");
+            if (previousUser == null) restore.remove("current_user"); else restore.putString("current_user", previousUser);
+            restore.commit();
+        }
+    }
+    @Test public void signupProfileSurvivesRecreationAndLogoutCanBeCancelled() throws Exception {
+        Context context = InstrumentationRegistry.getInstrumentation().getTargetContext();
+        Assume.assumeTrue("Use an unconnected demo device", new SessionManager(context).load() == null);
+        SharedPreferences preferences = context.getSharedPreferences("demo_accounts", Context.MODE_PRIVATE);
+        String previousUser = preferences.getString("current_user", null);
+        String username = "profile_" + UUID.randomUUID().toString().replace("-", "").substring(0, 8);
+        new DemoAuthManager(context).logout();
+        try (ActivityScenario<LoginActivity> scenario = ActivityScenario.launch(LoginActivity.class)) {
+            onView(withId(R.id.login_switch)).perform(scrollTo(), click());
+            onView(withId(R.id.profile_first_name)).perform(scrollTo(), replaceText("An"));
+            onView(withId(R.id.profile_last_name)).perform(scrollTo(), replaceText("Nguyen"));
+            onView(withId(R.id.profile_email)).perform(scrollTo(), replaceText("an@example.test"));
+            onView(withId(R.id.demo_username)).perform(scrollTo(), replaceText(username), closeSoftKeyboard());
+            scenario.recreate();
+            onView(withId(R.id.login_heading)).perform(scrollTo()).check(matches(withText(R.string.register_heading)));
+            onView(withId(R.id.profile_email)).check(matches(withText("an@example.test")));
+            onView(withId(R.id.demo_username)).check(matches(withText(username)));
+            onView(withId(R.id.demo_password)).perform(scrollTo(), replaceText(UUID.randomUUID().toString()), closeSoftKeyboard());
+            onView(withId(R.id.button_register)).perform(scrollTo(), click());
+            awaitView(R.id.demo_account);
+            onView(withId(R.id.local_profile)).check(matches(withText("An Nguyen\nan@example.test")));
+            awaitText(R.id.account_info, R.string.project_not_connected);
+            onView(withId(R.id.account_logout)).perform(scrollTo(), click());
+            onView(withText(android.R.string.cancel)).perform(click());
+            assertEquals(username, new DemoAuthManager(context).currentUsername());
+            onView(withId(R.id.account_logout)).perform(scrollTo(), click());
+            onView(withText(R.string.account_logout)).perform(click());
+            awaitView(R.id.demo_username);
+            org.junit.Assert.assertNull(new DemoAuthManager(context).currentUsername());
+            org.junit.Assert.assertNull(new SessionManager(context).load());
+        } finally {
+            SharedPreferences.Editor restore = preferences.edit().remove("user." + username)
+                    .remove("profile." + username + ".name").remove("profile." + username + ".email");
             if (previousUser == null) restore.remove("current_user"); else restore.putString("current_user", previousUser);
             restore.commit();
         }
