@@ -2,6 +2,7 @@ package vn.edu.usth.dropboxclient;
 
 import android.content.Context;
 import android.net.Uri;
+import androidx.core.content.FileProvider;
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.platform.app.InstrumentationRegistry;
 import com.dropbox.core.DbxException;
@@ -31,8 +32,13 @@ public class DropboxTransferServiceIoTest {
             + "\"server_modified\":\"2026-10-22T00:00:00Z\",\"rev\":\"123456789\",\"size\":5}";
     private static final class Transport extends HttpRequestor {
         final boolean rejectDownload;
+        final String metadata;
         byte[] uploaded;
-        Transport(boolean rejectDownload) { this.rejectDownload = rejectDownload; }
+        Transport(boolean rejectDownload) { this(rejectDownload, METADATA); }
+        Transport(boolean rejectDownload, String metadata) {
+            this.rejectDownload = rejectDownload;
+            this.metadata = metadata;
+        }
         @Override public Response doGet(String url, Iterable<Header> headers) { throw new AssertionError("Expected POST"); }
         @Override public Uploader startPut(String url, Iterable<Header> headers) { throw new AssertionError("Expected POST"); }
         @Override public Uploader startPost(String url, Iterable<Header> headers) {
@@ -50,7 +56,7 @@ public class DropboxTransferServiceIoTest {
                                     Collections.emptyMap());
                         }
                         return new Response(200, new ByteArrayInputStream(CONTENT),
-                                Collections.singletonMap("Dropbox-API-Result", Collections.singletonList(METADATA)));
+                                Collections.singletonMap("Dropbox-API-Result", Collections.singletonList(metadata)));
                     }
                     assertTrue(url.endsWith("/files/upload"));
                     uploaded = body.toByteArray();
@@ -86,6 +92,37 @@ public class DropboxTransferServiceIoTest {
             DropboxTransferService service = service(context, new Transport(true));
             assertThrows(DbxException.class, () -> service.downloadFile("/missing.bin", Uri.fromFile(output.toFile())));
             assertArrayEquals(CONTENT, Files.readAllBytes(output));
+        } finally { Files.deleteIfExists(output); }
+    }
+
+    @Test public void previewChecksSizeBeforeWritingAndUsesPrivateContentUri() throws Exception {
+        Context context = InstrumentationRegistry.getInstrumentation().getTargetContext();
+        Path directory = context.getCacheDir().toPath().resolve("previews");
+        Files.createDirectories(directory);
+        Path output = Files.createTempFile(directory, "preview-test-", ".pdf");
+        try {
+            Files.write(output, CONTENT);
+            DropboxTransferService service = service(context, new Transport(false));
+            assertThrows(DropboxTransferService.PreviewTooLargeException.class,
+                    () -> service.downloadPreview("/roundtrip.bin", output.toFile(), 4));
+            assertArrayEquals(CONTENT, Files.readAllBytes(output));
+            service.downloadPreview("/roundtrip.bin", output.toFile(), 5);
+            assertArrayEquals(CONTENT, Files.readAllBytes(output));
+            Uri uri = FileProvider.getUriForFile(context,
+                    context.getPackageName() + ".preview", output.toFile());
+            assertEquals("content", uri.getScheme());
+        } finally { Files.deleteIfExists(output); }
+    }
+
+    @Test public void previewRejectsActualBytesExceedingReportedSize() throws Exception {
+        Context context = InstrumentationRegistry.getInstrumentation().getTargetContext();
+        Path output = Files.createTempFile(context.getCacheDir().toPath(), "preview-limit-", ".bin");
+        try {
+            Transport transport = new Transport(false, METADATA.replace("\"size\":5", "\"size\":1"));
+            DropboxTransferService service = service(context, transport);
+            assertThrows(DropboxTransferService.PreviewTooLargeException.class,
+                    () -> service.downloadPreview("/roundtrip.bin", output.toFile(), 4));
+            assertTrue(Files.size(output) <= 4);
         } finally { Files.deleteIfExists(output); }
     }
 }

@@ -1,11 +1,13 @@
 package vn.edu.usth.dropboxclient.ui.files;
 
+import android.content.Intent;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.ImageView;
 import android.widget.TextView;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -40,6 +42,8 @@ import vn.edu.usth.dropboxclient.ui.folder.DropboxFolderFactory;
 import vn.edu.usth.dropboxclient.ui.folder.DropboxFolderService;
 import vn.edu.usth.dropboxclient.ui.folder.FolderValidationHelper;
 import vn.edu.usth.dropboxclient.ui.folder.RenameFolderDialogFragment;
+import vn.edu.usth.dropboxclient.ui.transfer.TransferActivity;
+import vn.edu.usth.dropboxclient.ui.transfer.TransferViewModel;
 
 public class FileBrowserFragment extends Fragment implements
         CreateFolderDialogFragment.OnFolderCreateListener,
@@ -56,15 +60,26 @@ public class FileBrowserFragment extends Fragment implements
     private boolean busy;
     private boolean actionBusy;
     private boolean actionNeedsRefresh;
+    private boolean firstResume = true;
     private View content;
 
     public FileBrowserFragment() { super(R.layout.fragment_file_browser); }
 
+    public static FileBrowserFragment newInstance(String startPath) {
+        FileBrowserFragment fragment = new FileBrowserFragment();
+        Bundle arguments = new Bundle();
+        arguments.putString(KEY_PATH, startPath);
+        fragment.setArguments(arguments);
+        return fragment;
+    }
+
     @Override public void onViewCreated(@NonNull View view, @Nullable Bundle state) {
         super.onViewCreated(view, state);
         content = view;
+        firstResume = true;
         io = Executors.newSingleThreadExecutor();
         if (state != null) path = state.getString(KEY_PATH, "");
+        else if (getArguments() != null) path = getArguments().getString(KEY_PATH, "");
         adapter = new FileAdapter();
         RecyclerView list = view.findViewById(R.id.recyclerViewFiles);
         list.setLayoutManager(new LinearLayoutManager(requireContext()));
@@ -85,8 +100,17 @@ public class FileBrowserFragment extends Fragment implements
             CreateFolderDialogFragment.newInstance(path)
                     .show(getChildFragmentManager(), "createFolder");
         });
+        view.findViewById(R.id.files_upload).setOnClickListener(v ->
+                startActivity(new Intent(requireContext(), TransferActivity.class)
+                        .putExtra(TransferActivity.EXTRA_FOLDER_PATH, path)));
         updateHeader();
         refresh();
+    }
+
+    @Override public void onResume() {
+        super.onResume();
+        if (content != null && !firstResume) refresh();
+        firstResume = false;
     }
 
     private void openFolder(String folderPath) {
@@ -120,6 +144,7 @@ public class FileBrowserFragment extends Fragment implements
         busy = true;
         view.findViewById(R.id.files_refresh).setEnabled(false);
         view.findViewById(R.id.files_create).setEnabled(false);
+        view.findViewById(R.id.files_upload).setEnabled(false);
         view.findViewById(R.id.files_more).setVisibility(View.GONE);
         view.findViewById(R.id.files_page_error).setVisibility(View.GONE);
         if (!nextPage) showState(State.LOADING);
@@ -153,6 +178,7 @@ public class FileBrowserFragment extends Fragment implements
                 view.findViewById(R.id.files_refresh).setEnabled(true);
                 if (page == null) {
                     view.findViewById(R.id.files_create).setEnabled(false);
+                    view.findViewById(R.id.files_upload).setEnabled(false);
                     if (nextPage) {
                         view.findViewById(R.id.files_page_error).setVisibility(View.VISIBLE);
                         view.findViewById(R.id.files_more).setVisibility(View.VISIBLE);
@@ -165,6 +191,7 @@ public class FileBrowserFragment extends Fragment implements
                 int start = entries.size();
                 actionNeedsRefresh = false;
                 view.findViewById(R.id.files_create).setEnabled(true);
+                view.findViewById(R.id.files_upload).setEnabled(true);
                 entries.addAll(page.getEntries());
                 adapter.notifyItemRangeInserted(start, page.getEntries().size());
                 cursor = page.getHasMore() ? page.getCursor() : null;
@@ -207,6 +234,7 @@ public class FileBrowserFragment extends Fragment implements
         View view = content;
         int request = ++generation;
         view.findViewById(R.id.files_create).setEnabled(false);
+        view.findViewById(R.id.files_upload).setEnabled(false);
         view.findViewById(R.id.files_refresh).setEnabled(false);
         view.findViewById(R.id.files_up).setEnabled(false);
         showActionStatus(view, getString(progressText));
@@ -236,6 +264,7 @@ public class FileBrowserFragment extends Fragment implements
                 } else {
                     actionNeedsRefresh = true;
                     view.findViewById(R.id.files_create).setEnabled(false);
+                    view.findViewById(R.id.files_upload).setEnabled(false);
                     showActionStatus(view, getString(folderErrorMessage(error)));
                 }
             });
@@ -249,12 +278,42 @@ public class FileBrowserFragment extends Fragment implements
     }
 
     private void showFileDetails(FileMetadata file) {
-        String filePath = file.getPathDisplay() == null ? file.getName() : file.getPathDisplay();
-        new AlertDialog.Builder(requireContext())
+        String filePath = file.getPathDisplay() != null
+                ? file.getPathDisplay() : file.getPathLower();
+        AlertDialog.Builder dialog = new AlertDialog.Builder(requireContext())
                 .setTitle(file.getName())
-                .setMessage(getString(R.string.files_file_details, filePath, file.getSize()))
-                .setPositiveButton(android.R.string.ok, null)
-                .show();
+                .setMessage(getString(R.string.files_file_details,
+                        filePath == null ? file.getName() : filePath, file.getSize()))
+                .setNegativeButton(android.R.string.cancel, null);
+        if (filePath != null) dialog.setPositiveButton(R.string.transfer_download,
+                (ignored, which) -> startActivity(new Intent(requireContext(), TransferActivity.class)
+                        .putExtra(TransferActivity.EXTRA_FOLDER_PATH, path)
+                        .putExtra(TransferActivity.EXTRA_DOWNLOAD_PATH, filePath)));
+        if (TransferViewModel.previewMimeType(filePath) != null)
+            dialog.setNeutralButton(R.string.preview_action,
+                    (ignored, which) -> startActivity(new Intent(requireContext(), TransferActivity.class)
+                            .putExtra(TransferActivity.EXTRA_FOLDER_PATH, path)
+                            .putExtra(TransferActivity.EXTRA_DOWNLOAD_PATH, filePath)
+                            .putExtra(TransferActivity.EXTRA_OPEN_PREVIEW, true)));
+        dialog.show();
+    }
+
+    private void showFolderMenu(Metadata item) {
+        if (busy || actionBusy || actionNeedsRefresh) return;
+        String folderPath = item.getPathDisplay();
+        if (folderPath == null) return;
+        new AlertDialog.Builder(requireContext())
+                .setTitle(item.getName())
+                .setItems(new String[]{getString(R.string.folder_rename),
+                        getString(R.string.folder_delete)}, (dialog, which) -> {
+                    if (which == 0) {
+                        RenameFolderDialogFragment.newInstance(folderPath, item.getName())
+                                .show(getChildFragmentManager(), "renameFolder");
+                    } else {
+                        DeleteFolderDialogFragment.newInstance(folderPath, item.getName())
+                                .show(getChildFragmentManager(), "deleteFolder");
+                    }
+                }).show();
     }
 
     private int folderErrorMessage(Exception error) {
@@ -310,17 +369,21 @@ public class FileBrowserFragment extends Fragment implements
 
     private final class FileAdapter extends RecyclerView.Adapter<FileAdapter.Holder> {
         @NonNull @Override public Holder onCreateViewHolder(@NonNull ViewGroup parent, int type) {
-            TextView label = (TextView) LayoutInflater.from(parent.getContext())
+            View row = LayoutInflater.from(parent.getContext())
                     .inflate(R.layout.item_dropbox_entry, parent, false);
-            return new Holder(label);
+            return new Holder(row);
         }
 
         @Override public void onBindViewHolder(@NonNull Holder holder, int position) {
             Metadata item = entries.get(position);
             boolean folder = item instanceof FolderMetadata;
-            holder.label.setText(getString(folder ? R.string.files_folder_item : R.string.files_file_item,
-                    item.getName()));
-            holder.label.setOnClickListener(v -> {
+            holder.label.setText(item.getName());
+            holder.itemView.setContentDescription(getString(
+                    folder ? R.string.files_folder_item : R.string.files_file_item, item.getName()));
+            holder.icon.setImageResource(folder ? R.drawable.ic_folder : R.drawable.ic_file);
+            holder.menu.setVisibility(folder ? View.VISIBLE : View.GONE);
+            holder.menu.setOnClickListener(folder ? v -> showFolderMenu(item) : null);
+            holder.itemView.setOnClickListener(v -> {
                 if (actionBusy) return;
                 if (folder) {
                     String folderPath = item.getPathDisplay();
@@ -329,22 +392,8 @@ public class FileBrowserFragment extends Fragment implements
                     showFileDetails((FileMetadata) item);
                 }
             });
-            holder.label.setOnLongClickListener(folder ? v -> {
-                if (busy || actionBusy || actionNeedsRefresh) return true;
-                String folderPath = item.getPathDisplay();
-                if (folderPath == null) return true;
-                new AlertDialog.Builder(requireContext())
-                        .setTitle(item.getName())
-                        .setItems(new String[]{getString(R.string.folder_rename),
-                                getString(R.string.folder_delete)}, (dialog, which) -> {
-                            if (which == 0) {
-                                RenameFolderDialogFragment.newInstance(folderPath, item.getName())
-                                        .show(getChildFragmentManager(), "renameFolder");
-                            } else {
-                                DeleteFolderDialogFragment.newInstance(folderPath, item.getName())
-                                        .show(getChildFragmentManager(), "deleteFolder");
-                            }
-                        }).show();
+            holder.itemView.setOnLongClickListener(folder ? v -> {
+                showFolderMenu(item);
                 return true;
             } : null);
         }
@@ -353,7 +402,14 @@ public class FileBrowserFragment extends Fragment implements
 
         private final class Holder extends RecyclerView.ViewHolder {
             final TextView label;
-            Holder(TextView label) { super(label); this.label = label; }
+            final ImageView icon;
+            final View menu;
+            Holder(View row) {
+                super(row);
+                label = row.findViewById(R.id.file_name);
+                icon = row.findViewById(R.id.file_icon);
+                menu = row.findViewById(R.id.file_menu);
+            }
         }
     }
 }

@@ -4,7 +4,7 @@ import android.os.Bundle;
 import android.content.Intent;
 import vn.edu.usth.dropboxclient.auth.DemoAuthManager;
 import vn.edu.usth.dropboxclient.ui.login.LoginActivity;
-import android.widget.RadioGroup;
+import com.google.android.material.bottomnavigation.BottomNavigationView;
 
 import androidx.activity.EdgeToEdge;
 import androidx.appcompat.app.AppCompatActivity;
@@ -16,12 +16,14 @@ import androidx.fragment.app.Fragment;
 import vn.edu.usth.dropboxclient.R;
 import vn.edu.usth.dropboxclient.ui.account.AccountFragment;
 import vn.edu.usth.dropboxclient.ui.files.FileBrowserFragment;
+import vn.edu.usth.dropboxclient.ui.search.SearchFragment;
 
 public class MainActivity extends AppCompatActivity {
 
     private static final String KEY_SELECTED_TAB = "selected_tab";
 
     private int selectedTab = R.id.nav_account;
+    private String nextFilesPath;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -51,7 +53,7 @@ public class MainActivity extends AppCompatActivity {
                 }
         );
 
-        RadioGroup navigation = findViewById(R.id.navigation);
+        BottomNavigationView navigation = findViewById(R.id.navigation);
 
         if (savedInstanceState != null) {
             selectedTab = savedInstanceState.getInt(
@@ -60,19 +62,23 @@ public class MainActivity extends AppCompatActivity {
             );
         }
 
-        navigation.check(selectedTab);
+        navigation.setSelectedItemId(selectedTab);
 
         // FragmentManager tự khôi phục Fragment khi Activity được tạo lại.
         if (savedInstanceState == null) {
             showTab(selectedTab);
         }
 
-        navigation.setOnCheckedChangeListener((group, checkedId) -> {
+        navigation.setOnItemSelectedListener(item -> {
+            int checkedId = item.getItemId();
             if (checkedId == R.id.nav_files
+                    || checkedId == R.id.nav_search
                     || checkedId == R.id.nav_account) {
                 selectedTab = checkedId;
                 showTab(checkedId);
+                return true;
             }
+            return false;
         });
     }
 
@@ -86,19 +92,28 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void showTab(int tabId) {
-        Class<? extends Fragment> screen;
+        Fragment screen;
 
         if (tabId == R.id.nav_account) {
-            screen = AccountFragment.class;
+            screen = new AccountFragment();
+        } else if (tabId == R.id.nav_search) {
+            screen = new SearchFragment();
         } else {
-            screen = FileBrowserFragment.class;
+            screen = nextFilesPath == null ? new FileBrowserFragment()
+                    : FileBrowserFragment.newInstance(nextFilesPath);
+            nextFilesPath = null;
         }
 
         getSupportFragmentManager()
                 .beginTransaction()
                 .setReorderingAllowed(true)
-                .replace(R.id.fragment_container, screen, null)
+                .replace(R.id.fragment_container, screen)
                 .commit();
+    }
+
+    public void openFiles(String path) {
+        nextFilesPath = path;
+        ((BottomNavigationView) findViewById(R.id.navigation)).setSelectedItemId(R.id.nav_files);
     }
 
     @Override

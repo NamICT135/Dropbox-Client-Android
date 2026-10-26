@@ -1,66 +1,112 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
     android:padding="16dp">
 
     <TextView
-        android:id="@+id/files_path"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:textSize="18sp"
+        android:text="@string/files_title"
+        android:textSize="30sp"
         android:textStyle="bold" />
 
-    <LinearLayout
+    <com.google.android.material.card.MaterialCardView
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="horizontal">
-
-        <Button
-            android:id="@+id/files_up"
-            style="?android:attr/buttonBarButtonStyle"
-            android:layout_width="0dp"
+        android:layout_marginTop="16dp"
+        app:cardBackgroundColor="@color/surface_card"
+        app:cardCornerRadius="20dp"
+        app:strokeColor="@color/panel_outline"
+        app:strokeWidth="1dp">
+        <LinearLayout
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:text="@string/files_up" />
-
-        <Button
-            android:id="@+id/files_refresh"
-            style="?android:attr/buttonBarButtonStyle"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:text="@string/files_refresh" />
-    </LinearLayout>
-
-    <Button
-        android:id="@+id/files_create"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text="@string/folder_create" />
+            android:orientation="vertical"
+            android:padding="16dp">
+            <TextView
+                android:id="@+id/files_path"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:textSize="16sp"
+                android:textStyle="bold" />
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="12dp"
+                android:orientation="horizontal">
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/files_up"
+                    style="@style/Widget.Material3.Button.TextButton"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:minHeight="48dp"
+                    android:text="@string/files_up" />
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/files_refresh"
+                    style="@style/Widget.Material3.Button.TextButton"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:minHeight="48dp"
+                    android:text="@string/files_refresh" />
+            </LinearLayout>
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal">
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/files_create"
+                    style="@style/Widget.Material3.Button.OutlinedButton"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:layout_marginEnd="6dp"
+                    android:minHeight="48dp"
+                    android:text="@string/folder_create" />
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/files_upload"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:layout_marginStart="6dp"
+                    android:minHeight="48dp"
+                    android:text="@string/files_upload" />
+            </LinearLayout>
+        </LinearLayout>
+    </com.google.android.material.card.MaterialCardView>
 
     <TextView
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="@string/folder_action_hint" />
-
+        android:layout_marginTop="10dp"
+        android:text="@string/folder_action_hint"
+        android:textColor="@color/text_muted"
+        android:textSize="13sp" />
     <TextView
         android:id="@+id/files_action_status"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
+        android:layout_marginTop="10dp"
         android:accessibilityLiveRegion="polite"
         android:visibility="gone" />
 
     <FrameLayout
         android:layout_width="match_parent"
         android:layout_height="0dp"
-        android:layout_weight="1">
+        android:layout_weight="1"
+        android:layout_marginTop="14dp"
+        android:background="@drawable/panel_surface">
 
         <androidx.recyclerview.widget.RecyclerView
             android:id="@+id/recyclerViewFiles"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
+            android:paddingVertical="8dp"
+            android:clipToPadding="false"
             android:visibility="gone" />
 
         <ProgressBar
@@ -74,7 +120,9 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_gravity="center"
+            android:padding="20dp"
             android:text="@string/files_empty"
+            android:textColor="@color/text_muted"
             android:textSize="16sp"
             android:visibility="gone" />
 
@@ -85,21 +133,22 @@
             android:layout_gravity="center"
             android:gravity="center"
             android:orientation="vertical"
+            android:padding="20dp"
             android:visibility="gone">
-
             <TextView
                 android:id="@+id/tvErrorMessage"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:gravity="center"
                 android:text="@string/files_load_error"
-                android:textColor="@android:color/holo_red_dark"
+                android:textColor="@color/status_error"
                 android:textSize="16sp" />
-
-            <Button
+            <com.google.android.material.button.MaterialButton
                 android:id="@+id/btnRetry"
+                style="@style/Widget.Material3.Button.OutlinedButton"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
+                android:layout_marginTop="12dp"
                 android:text="@string/files_retry" />
         </LinearLayout>
     </FrameLayout>
@@ -108,12 +157,13 @@
         android:id="@+id/files_page_error"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
         android:text="@string/files_page_error"
-        android:textColor="@android:color/holo_red_dark"
+        android:textColor="@color/status_error"
         android:visibility="gone" />
-
-    <Button
+    <com.google.android.material.button.MaterialButton
         android:id="@+id/files_more"
+        style="@style/Widget.Material3.Button.TextButton"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:text="@string/files_more"

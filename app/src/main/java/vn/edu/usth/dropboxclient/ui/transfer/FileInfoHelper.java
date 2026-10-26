@@ -5,11 +5,12 @@ import android.content.Context;
 import android.database.Cursor;
 import android.net.Uri;
 import android.provider.OpenableColumns;
+import java.io.IOException;
 
 public class FileInfoHelper {
 
-    public static String getFileName(Context context, Uri uri) {
-        String fileName = "Unknown file";
+    public static String getFileName(Context context, Uri uri) throws IOException {
+        String fileName = null;
 
         try (Cursor cursor = context.getContentResolver().query(
                 uri, null, null, null, null)) {
@@ -25,6 +26,9 @@ public class FileInfoHelper {
             }
         }
 
+        if (fileName == null || fileName.trim().isEmpty()) {
+            throw new IOException("Selected document has no file name");
+        }
         return fileName;
     }
 

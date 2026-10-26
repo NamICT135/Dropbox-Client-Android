@@ -11,8 +11,11 @@ import com.dropbox.core.v2.files.FileMetadata;
 import vn.edu.usth.dropboxclient.repository.DropboxRepository;
 
 import java.io.IOException;
+import java.io.File;
+import java.io.FileOutputStream;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.io.FilterOutputStream;
 
 public class DropboxTransferService {
 
@@ -84,6 +87,37 @@ public class DropboxTransferService {
 
             return download.download(outputStream);
         }
+    }
+
+    public FileMetadata downloadPreview(String dropboxPath, File destination, long maxBytes)
+            throws IOException, DbxException {
+        validatePath(dropboxPath);
+        if (destination == null || maxBytes <= 0) throw new IllegalArgumentException("Invalid preview destination");
+        try (DbxDownloader<FileMetadata> download = repository.openDownload(dropboxPath)) {
+            if (download.getResult().getSize() > maxBytes) throw new PreviewTooLargeException();
+            // Enforce the limit on actual bytes as well as server metadata.
+            try (OutputStream output = new FilterOutputStream(new FileOutputStream(destination)) {
+                private long written;
+
+                @Override public void write(int value) throws IOException {
+                    if (written >= maxBytes) throw new PreviewTooLargeException();
+                    out.write(value);
+                    written++;
+                }
+
+                @Override public void write(byte[] buffer, int offset, int length) throws IOException {
+                    if (length > maxBytes - written) throw new PreviewTooLargeException();
+                    out.write(buffer, offset, length);
+                    written += length;
+                }
+            }) {
+                return download.download(output);
+            }
+        }
+    }
+
+    public static final class PreviewTooLargeException extends IOException {
+        public PreviewTooLargeException() { super("Preview exceeds the supported size"); }
     }
 
     private static void validatePath(String path) {
