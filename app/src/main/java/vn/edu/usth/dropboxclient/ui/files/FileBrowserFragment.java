@@ -43,6 +43,7 @@ import vn.edu.usth.dropboxclient.ui.folder.DropboxFolderService;
 import vn.edu.usth.dropboxclient.ui.folder.FolderValidationHelper;
 import vn.edu.usth.dropboxclient.ui.folder.RenameFolderDialogFragment;
 import vn.edu.usth.dropboxclient.ui.transfer.TransferActivity;
+import vn.edu.usth.dropboxclient.ui.transfer.TransferViewModel;
 
 public class FileBrowserFragment extends Fragment implements
         CreateFolderDialogFragment.OnFolderCreateListener,
@@ -64,12 +65,21 @@ public class FileBrowserFragment extends Fragment implements
 
     public FileBrowserFragment() { super(R.layout.fragment_file_browser); }
 
+    public static FileBrowserFragment newInstance(String startPath) {
+        FileBrowserFragment fragment = new FileBrowserFragment();
+        Bundle arguments = new Bundle();
+        arguments.putString(KEY_PATH, startPath);
+        fragment.setArguments(arguments);
+        return fragment;
+    }
+
     @Override public void onViewCreated(@NonNull View view, @Nullable Bundle state) {
         super.onViewCreated(view, state);
         content = view;
         firstResume = true;
         io = Executors.newSingleThreadExecutor();
         if (state != null) path = state.getString(KEY_PATH, "");
+        else if (getArguments() != null) path = getArguments().getString(KEY_PATH, "");
         adapter = new FileAdapter();
         RecyclerView list = view.findViewById(R.id.recyclerViewFiles);
         list.setLayoutManager(new LinearLayoutManager(requireContext()));
@@ -279,6 +289,12 @@ public class FileBrowserFragment extends Fragment implements
                 (ignored, which) -> startActivity(new Intent(requireContext(), TransferActivity.class)
                         .putExtra(TransferActivity.EXTRA_FOLDER_PATH, path)
                         .putExtra(TransferActivity.EXTRA_DOWNLOAD_PATH, filePath)));
+        if (TransferViewModel.previewMimeType(filePath) != null)
+            dialog.setNeutralButton(R.string.preview_action,
+                    (ignored, which) -> startActivity(new Intent(requireContext(), TransferActivity.class)
+                            .putExtra(TransferActivity.EXTRA_FOLDER_PATH, path)
+                            .putExtra(TransferActivity.EXTRA_DOWNLOAD_PATH, filePath)
+                            .putExtra(TransferActivity.EXTRA_OPEN_PREVIEW, true)));
         dialog.show();
     }
 

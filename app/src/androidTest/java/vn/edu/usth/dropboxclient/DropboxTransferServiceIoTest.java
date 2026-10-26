@@ -2,6 +2,7 @@ package vn.edu.usth.dropboxclient;
 
 import android.content.Context;
 import android.net.Uri;
+import androidx.core.content.FileProvider;
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.platform.app.InstrumentationRegistry;
 import com.dropbox.core.DbxException;
@@ -86,6 +87,25 @@ public class DropboxTransferServiceIoTest {
             DropboxTransferService service = service(context, new Transport(true));
             assertThrows(DbxException.class, () -> service.downloadFile("/missing.bin", Uri.fromFile(output.toFile())));
             assertArrayEquals(CONTENT, Files.readAllBytes(output));
+        } finally { Files.deleteIfExists(output); }
+    }
+
+    @Test public void previewChecksSizeBeforeWritingAndUsesPrivateContentUri() throws Exception {
+        Context context = InstrumentationRegistry.getInstrumentation().getTargetContext();
+        Path directory = context.getCacheDir().toPath().resolve("previews");
+        Files.createDirectories(directory);
+        Path output = Files.createTempFile(directory, "preview-test-", ".pdf");
+        try {
+            Files.write(output, CONTENT);
+            DropboxTransferService service = service(context, new Transport(false));
+            assertThrows(DropboxTransferService.PreviewTooLargeException.class,
+                    () -> service.downloadPreview("/roundtrip.bin", output.toFile(), 4));
+            assertArrayEquals(CONTENT, Files.readAllBytes(output));
+            service.downloadPreview("/roundtrip.bin", output.toFile(), 5);
+            assertArrayEquals(CONTENT, Files.readAllBytes(output));
+            Uri uri = FileProvider.getUriForFile(context,
+                    context.getPackageName() + ".preview", output.toFile());
+            assertEquals("content", uri.getScheme());
         } finally { Files.deleteIfExists(output); }
     }
 }

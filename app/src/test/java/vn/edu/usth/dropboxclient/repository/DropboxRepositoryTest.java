@@ -6,6 +6,7 @@ import com.dropbox.core.http.HttpRequestor;
 import com.dropbox.core.v2.DbxClientV2;
 import com.dropbox.core.v2.files.FolderMetadata;
 import com.dropbox.core.v2.files.ListFolderResult;
+import com.dropbox.core.v2.files.SearchV2Result;
 import com.dropbox.core.v2.users.FullAccount;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -88,5 +89,21 @@ public class DropboxRepositoryTest {
         ListFolderResult finalPage = repository(second).continueListFolder(page.getCursor());
         assertEquals("https://api.dropboxapi.com/2/files/list_folder/continue", second.requestedUrl);
         assertFalse(finalPage.getHasMore());
+    }
+
+    @Test public void searchesDropboxAndContinuesResults() throws Exception {
+        StubRequestor first = new StubRequestor(200,
+                "{\"matches\":[{\"metadata\":{\".tag\":\"metadata\",\"metadata\":{\".tag\":\"folder\","
+                        + "\"name\":\"Reports\",\"path_lower\":\"/reports\",\"path_display\":\"/Reports\","
+                        + "\"id\":\"id:reports\"}}}],\"has_more\":true,\"cursor\":\"search-next\"}");
+        SearchV2Result page = repository(first).search("Reports");
+        assertEquals("https://api.dropboxapi.com/2/files/search_v2", first.requestedUrl);
+        assertEquals("Reports", page.getMatches().get(0).getMetadata().getMetadataValue().getName());
+        assertTrue(page.getHasMore());
+
+        StubRequestor second = new StubRequestor(200, "{\"matches\":[],\"has_more\":false}");
+        SearchV2Result last = repository(second).continueSearch(page.getCursor());
+        assertEquals("https://api.dropboxapi.com/2/files/search/continue_v2", second.requestedUrl);
+        assertFalse(last.getHasMore());
     }
 }

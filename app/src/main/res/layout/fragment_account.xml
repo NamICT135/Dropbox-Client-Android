@@ -20,9 +20,6 @@
                     android:text="@string/account_local_heading" android:textColor="?attr/colorPrimary" android:textStyle="bold" />
                 <TextView android:id="@+id/demo_account" android:layout_width="match_parent"
                     android:layout_height="wrap_content" android:layout_marginTop="12dp" android:textSize="22sp" android:textStyle="bold" />
-                <TextView android:id="@+id/local_profile" android:layout_width="match_parent"
-                    android:layout_height="wrap_content" android:layout_marginTop="8dp"
-                    android:textColor="@color/text_muted" android:textIsSelectable="true" />
                 <TextView android:layout_width="match_parent" android:layout_height="wrap_content"
                     android:layout_marginTop="12dp" android:text="@string/demo_shared_storage"
                     android:textColor="@color/text_muted" android:textSize="12sp" />
@@ -42,25 +39,10 @@
                 <TextView android:id="@+id/account_info" android:layout_width="match_parent"
                     android:layout_height="wrap_content" android:layout_marginTop="16dp"
                     android:text="@string/account_loading" android:accessibilityLiveRegion="polite" />
-                <LinearLayout android:id="@+id/account_details" android:layout_width="match_parent"
-                    android:layout_height="wrap_content" android:orientation="vertical" android:visibility="gone">
-                    <TextView android:layout_width="match_parent" android:layout_height="wrap_content"
-                        android:layout_marginTop="16dp" android:text="@string/account_name" android:textSize="12sp" />
-                    <TextView android:id="@+id/cloud_name" android:layout_width="match_parent"
-                        android:layout_height="wrap_content" android:textSize="16sp" android:textIsSelectable="true" />
-                    <TextView android:layout_width="match_parent" android:layout_height="wrap_content"
-                        android:layout_marginTop="16dp" android:text="@string/account_email" android:textSize="12sp" />
-                    <TextView android:id="@+id/cloud_email" android:layout_width="match_parent"
-                        android:layout_height="wrap_content" android:textSize="16sp" android:textIsSelectable="true" />
-                    <TextView android:layout_width="match_parent" android:layout_height="wrap_content"
-                        android:layout_marginTop="16dp" android:text="@string/account_plan" android:textSize="12sp" />
-                    <TextView android:id="@+id/cloud_plan" android:layout_width="match_parent"
-                        android:layout_height="wrap_content" android:textSize="16sp" android:textIsSelectable="true" />
-                    <TextView android:layout_width="match_parent" android:layout_height="wrap_content"
-                        android:layout_marginTop="16dp" android:text="@string/account_id" android:textSize="12sp" />
-                    <TextView android:id="@+id/cloud_id" android:layout_width="match_parent"
-                        android:layout_height="wrap_content" android:textSize="16sp" android:textIsSelectable="true" />
-                </LinearLayout>
+                <TextView android:id="@+id/account_connected_note"
+                    android:layout_width="match_parent" android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp" android:text="@string/account_connected_note"
+                    android:textColor="@color/text_muted" android:visibility="gone" />
                 <com.google.android.material.button.MaterialButton android:id="@+id/account_retry"
                     style="@style/Widget.Material3.Button.TextButton" android:layout_width="match_parent"
                     android:layout_height="wrap_content" android:layout_marginTop="12dp" android:text="@string/account_retry" />

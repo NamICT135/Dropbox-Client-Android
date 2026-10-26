@@ -101,6 +101,14 @@
                     android:layout_marginTop="12dp"
                     android:minHeight="52dp"
                     android:text="@string/transfer_download" />
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/transfer_preview"
+                    style="@style/Widget.Material3.Button.TextButton"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:minHeight="48dp"
+                    android:text="@string/transfer_preview" />
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
 

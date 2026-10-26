@@ -3,6 +3,7 @@ package vn.edu.usth.dropboxclient.ui.transfer;
 import android.app.Activity;
 import android.content.ActivityNotFoundException;
 import android.content.Intent;
+import android.net.Uri;
 import android.os.Bundle;
 import android.widget.EditText;
 import android.widget.TextView;
@@ -13,6 +14,7 @@ import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.graphics.Insets;
+import androidx.core.content.FileProvider;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
 import androidx.lifecycle.ViewModelProvider;
@@ -25,6 +27,7 @@ import vn.edu.usth.dropboxclient.ui.login.LoginActivity;
 public class TransferActivity extends AppCompatActivity {
     public static final String EXTRA_FOLDER_PATH = "folder_path";
     public static final String EXTRA_DOWNLOAD_PATH = "download_path";
+    public static final String EXTRA_OPEN_PREVIEW = "open_preview";
     private static final String KEY_PENDING_PATH = "pending_download_path";
     private static final String KEY_PICKER_PENDING = "picker_pending";
 
@@ -104,12 +107,8 @@ public class TransferActivity extends AppCompatActivity {
         });
         findViewById(R.id.transfer_download).setOnClickListener(v -> {
             if (model.isBusy() || pickerPending) return;
-            String path = dropboxPathInput.getText().toString().trim();
-            if (!path.startsWith("/") || path.length() <= 1 || path.endsWith("/")) {
-                dropboxPathInput.setError(getString(R.string.transfer_invalid_path));
-                model.showMessage(R.string.transfer_invalid_path);
-                return;
-            }
+            String path = checkedPath();
+            if (path == null) return;
             pendingDownloadPath = path;
             pickerPending = true;
             renderBusy();
@@ -121,6 +120,11 @@ public class TransferActivity extends AppCompatActivity {
                 pickerPending = false;
                 model.showMessage(R.string.transfer_picker_error);
             }
+        });
+        findViewById(R.id.transfer_preview).setOnClickListener(v -> {
+            if (model.isBusy() || pickerPending) return;
+            String path = checkedPath();
+            if (path != null) model.preview(path);
         });
         findViewById(R.id.transfer_setup).setOnClickListener(v ->
                 startActivity(new Intent(this, ProjectDropboxActivity.class)));
@@ -137,8 +141,36 @@ public class TransferActivity extends AppCompatActivity {
             if (result.uploadedPath != null) dropboxPathInput.setText(result.uploadedPath);
             busyBack.setEnabled(result.busy);
             renderBusy();
+            if (result.previewFile != null) {
+                model.consumePreview();
+                openPreview(result);
+            }
         });
         renderBusy();
+        if (state == null && initialPath != null
+                && getIntent().getBooleanExtra(EXTRA_OPEN_PREVIEW, false))
+            model.preview(initialPath);
+    }
+
+    private String checkedPath() {
+        String path = dropboxPathInput.getText().toString().trim();
+        if (path.startsWith("/") && path.length() > 1 && !path.endsWith("/")) return path;
+        dropboxPathInput.setError(getString(R.string.transfer_invalid_path));
+        model.showMessage(R.string.transfer_invalid_path);
+        return null;
+    }
+
+    private void openPreview(TransferViewModel.State result) {
+        try {
+            Uri uri = FileProvider.getUriForFile(this,
+                    getPackageName() + ".preview", result.previewFile);
+            Intent intent = new Intent(Intent.ACTION_VIEW);
+            intent.setDataAndType(uri, result.previewMime);
+            intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+            startActivity(intent);
+        } catch (ActivityNotFoundException e) {
+            model.showMessage(R.string.preview_no_viewer);
+        }
     }
 
     @Override protected void onResume() {
@@ -151,6 +183,7 @@ public class TransferActivity extends AppCompatActivity {
         boolean enabled = !model.isBusy() && !pickerPending;
         findViewById(R.id.transfer_upload).setEnabled(enabled);
         findViewById(R.id.transfer_download).setEnabled(enabled);
+        findViewById(R.id.transfer_preview).setEnabled(enabled);
         findViewById(R.id.transfer_setup).setEnabled(enabled);
         findViewById(R.id.transfer_back).setEnabled(enabled);
         dropboxPathInput.setEnabled(enabled);

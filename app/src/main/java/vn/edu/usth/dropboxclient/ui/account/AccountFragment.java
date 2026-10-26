@@ -13,7 +13,6 @@ import androidx.fragment.app.Fragment;
 import com.dropbox.core.DbxException;
 import com.dropbox.core.oauth.DbxCredential;
 import com.dropbox.core.v2.users.FullAccount;
-import com.dropbox.core.v2.userscommon.AccountType;
 import java.io.IOException;
 import java.security.GeneralSecurityException;
 import java.util.concurrent.ExecutorService;
@@ -37,9 +36,6 @@ public class AccountFragment extends Fragment {
         DemoAuthManager demo = new DemoAuthManager(requireContext());
         TextView user = view.findViewById(R.id.demo_account);
         user.setText(getString(R.string.demo_account_details, demo.currentUsername()));
-        ((TextView) view.findViewById(R.id.local_profile)).setText(getString(
-                R.string.account_profile_details, demo.currentDisplayName(),
-                demo.currentEmail().isEmpty() ? getString(R.string.account_email_unset) : demo.currentEmail()));
         SessionManager cloud = new SessionManager(requireContext());
         view.findViewById(R.id.account_retry).setOnClickListener(v -> load(view, cloud));
         view.findViewById(R.id.account_connect).setOnClickListener(v ->
@@ -77,7 +73,7 @@ public class AccountFragment extends Fragment {
         view.findViewById(R.id.account_retry).setEnabled(false);
         view.findViewById(R.id.account_retry).setVisibility(View.GONE);
         view.findViewById(R.id.account_disconnect).setVisibility(View.GONE);
-        view.findViewById(R.id.account_details).setVisibility(View.GONE);
+        view.findViewById(R.id.account_connected_note).setVisibility(View.GONE);
         view.findViewById(R.id.account_progress).setVisibility(View.VISIBLE);
         io.execute(() -> {
             FullAccount details = null;
@@ -134,16 +130,7 @@ public class AccountFragment extends Fragment {
                 view.findViewById(R.id.account_progress).setVisibility(View.GONE);
                 if (result != null) {
                     info.setText(R.string.account_connected);
-                    view.findViewById(R.id.account_details).setVisibility(View.VISIBLE);
-                    ((TextView) view.findViewById(R.id.cloud_name)).setText(result.getName().getDisplayName());
-                    ((TextView) view.findViewById(R.id.cloud_email)).setText(getString(
-                            result.getEmailVerified() ? R.string.account_email_verified : R.string.account_email_unverified,
-                            result.getEmail()));
-                    int plan = result.getAccountType() == AccountType.BASIC ? R.string.account_plan_basic
-                            : result.getAccountType() == AccountType.PRO ? R.string.account_plan_pro
-                            : result.getAccountType() == AccountType.BUSINESS ? R.string.account_plan_business : R.string.account_plan_other;
-                    ((TextView) view.findViewById(R.id.cloud_plan)).setText(plan);
-                    ((TextView) view.findViewById(R.id.cloud_id)).setText(result.getAccountId());
+                    view.findViewById(R.id.account_connected_note).setVisibility(View.VISIBLE);
                 } else info.setText(error);
                 ((TextView) view.findViewById(R.id.account_connect)).setText(
                         canDisconnect ? R.string.account_reconnect : R.string.project_setup);
@@ -155,7 +142,7 @@ public class AccountFragment extends Fragment {
     }
     private void showSessionError(View view) {
         view.findViewById(R.id.account_progress).setVisibility(View.GONE);
-        view.findViewById(R.id.account_details).setVisibility(View.GONE);
+        view.findViewById(R.id.account_connected_note).setVisibility(View.GONE);
         view.findViewById(R.id.account_retry).setVisibility(View.VISIBLE);
         view.findViewById(R.id.account_retry).setEnabled(true);
         ((TextView) view.findViewById(R.id.account_info)).setText(R.string.session_error);

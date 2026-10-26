@@ -7,6 +7,8 @@ import com.dropbox.core.v2.files.FileMetadata;
 import com.dropbox.core.v2.files.FolderMetadata;
 import com.dropbox.core.v2.files.Metadata;
 import com.dropbox.core.v2.files.ListFolderResult;
+import com.dropbox.core.v2.files.SearchOptions;
+import com.dropbox.core.v2.files.SearchV2Result;
 import com.dropbox.core.v2.files.WriteMode;
 import com.dropbox.core.v2.users.FullAccount;
 import java.io.IOException;
@@ -30,6 +32,16 @@ public class DropboxRepository {
 
     public ListFolderResult continueListFolder(String cursor) throws DbxException {
         return client.files().listFolderContinue(cursor);
+    }
+
+    public SearchV2Result search(String query) throws DbxException {
+        return client.files().searchV2Builder(query)
+                .withOptions(SearchOptions.newBuilder().withMaxResults(50L).build())
+                .start();
+    }
+
+    public SearchV2Result continueSearch(String cursor) throws DbxException {
+        return client.files().searchContinueV2(cursor);
     }
 
     /** Caller owns the input stream. Existing cloud files are never silently overwritten. */

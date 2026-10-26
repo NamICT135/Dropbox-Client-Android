@@ -117,6 +117,10 @@ public class DemoFlowTest {
             onView(withId(R.id.project_back)).perform(scrollTo(), click());
             onView(withId(R.id.nav_files)).perform(click());
             awaitView(R.id.files_upload);
+            onView(withId(R.id.nav_search)).perform(click());
+            awaitView(R.id.search_query);
+            onView(withId(R.id.search_button)).perform(click());
+            onView(withId(R.id.search_status)).check(matches(withText(R.string.search_enter_query)));
             onView(withId(R.id.nav_account)).perform(click());
             onView(withId(R.id.account_logout)).perform(scrollTo(), click());
             onView(withText(R.string.account_logout)).perform(click());
@@ -159,7 +163,9 @@ public class DemoFlowTest {
             onView(withId(R.id.demo_password)).perform(scrollTo(), replaceText(UUID.randomUUID().toString()), closeSoftKeyboard());
             onView(withId(R.id.button_register)).perform(scrollTo(), click());
             awaitView(R.id.demo_account);
-            onView(withId(R.id.local_profile)).check(matches(withText("An Nguyen\nan@example.test")));
+            onView(withId(R.id.demo_account)).check(matches(withText(username)));
+            assertEquals("An Nguyen", new DemoAuthManager(context).currentDisplayName());
+            assertEquals("an@example.test", new DemoAuthManager(context).currentEmail());
             awaitText(R.id.account_info, R.string.project_not_connected);
             onView(withId(R.id.account_logout)).perform(scrollTo(), click());
             onView(withText(android.R.string.cancel)).perform(click());

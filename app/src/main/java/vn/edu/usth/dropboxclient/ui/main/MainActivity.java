@@ -16,12 +16,14 @@ import androidx.fragment.app.Fragment;
 import vn.edu.usth.dropboxclient.R;
 import vn.edu.usth.dropboxclient.ui.account.AccountFragment;
 import vn.edu.usth.dropboxclient.ui.files.FileBrowserFragment;
+import vn.edu.usth.dropboxclient.ui.search.SearchFragment;
 
 public class MainActivity extends AppCompatActivity {
 
     private static final String KEY_SELECTED_TAB = "selected_tab";
 
     private int selectedTab = R.id.nav_account;
+    private String nextFilesPath;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -70,6 +72,7 @@ public class MainActivity extends AppCompatActivity {
         navigation.setOnItemSelectedListener(item -> {
             int checkedId = item.getItemId();
             if (checkedId == R.id.nav_files
+                    || checkedId == R.id.nav_search
                     || checkedId == R.id.nav_account) {
                 selectedTab = checkedId;
                 showTab(checkedId);
@@ -89,19 +92,28 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void showTab(int tabId) {
-        Class<? extends Fragment> screen;
+        Fragment screen;
 
         if (tabId == R.id.nav_account) {
-            screen = AccountFragment.class;
+            screen = new AccountFragment();
+        } else if (tabId == R.id.nav_search) {
+            screen = new SearchFragment();
         } else {
-            screen = FileBrowserFragment.class;
+            screen = nextFilesPath == null ? new FileBrowserFragment()
+                    : FileBrowserFragment.newInstance(nextFilesPath);
+            nextFilesPath = null;
         }
 
         getSupportFragmentManager()
                 .beginTransaction()
                 .setReorderingAllowed(true)
-                .replace(R.id.fragment_container, screen, null)
+                .replace(R.id.fragment_container, screen)
                 .commit();
+    }
+
+    public void openFiles(String path) {
+        nextFilesPath = path;
+        ((BottomNavigationView) findViewById(R.id.navigation)).setSelectedItemId(R.id.nav_files);
     }
 
     @Override

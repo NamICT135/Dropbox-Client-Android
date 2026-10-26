@@ -11,6 +11,8 @@ import com.dropbox.core.v2.files.FileMetadata;
 import vn.edu.usth.dropboxclient.repository.DropboxRepository;
 
 import java.io.IOException;
+import java.io.File;
+import java.io.FileOutputStream;
 import java.io.InputStream;
 import java.io.OutputStream;
 
@@ -84,6 +86,22 @@ public class DropboxTransferService {
 
             return download.download(outputStream);
         }
+    }
+
+    public FileMetadata downloadPreview(String dropboxPath, File destination, long maxBytes)
+            throws IOException, DbxException {
+        validatePath(dropboxPath);
+        if (destination == null || maxBytes <= 0) throw new IllegalArgumentException("Invalid preview destination");
+        try (DbxDownloader<FileMetadata> download = repository.openDownload(dropboxPath)) {
+            if (download.getResult().getSize() > maxBytes) throw new PreviewTooLargeException();
+            try (OutputStream output = new FileOutputStream(destination)) {
+                return download.download(output);
+            }
+        }
+    }
+
+    public static final class PreviewTooLargeException extends IOException {
+        public PreviewTooLargeException() { super("Preview exceeds the supported size"); }
     }
 
     private static void validatePath(String path) {
