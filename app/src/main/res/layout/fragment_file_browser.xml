@@ -34,6 +34,24 @@
             android:text="@string/files_refresh" />
     </LinearLayout>
 
+    <Button
+        android:id="@+id/files_create"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="@string/folder_create" />
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="@string/folder_action_hint" />
+
+    <TextView
+        android:id="@+id/files_action_status"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:accessibilityLiveRegion="polite"
+        android:visibility="gone" />
+
     <FrameLayout
         android:layout_width="match_parent"
         android:layout_height="0dp"
