@@ -14,6 +14,32 @@ A six-member USTH Mobile Application Development project built with **Java and X
 
 The local account is a coursework entry mechanism, not a production identity service or a separate Dropbox account for each user. Local accounts on the same device share its authorized project App Folder.
 
+## Application workflow
+
+1. Register or sign in with a local username. The app opens **Account**, **Files**, and **Search** in `MainActivity`.
+2. In **Account**, choose **Set up project storage**. Dropbox OAuth 2.0 PKCE authorizes the App Folder; the app verifies the connection and saves the credential encrypted on this device. Files and Search need this connection.
+3. In **Files**, browse folders, refresh or load more entries, manage folders, upload a document, or tap a file to download or preview it. **Search** finds files and folders by name; a folder result opens in Files, while a file result opens the transfer screen.
+4. File and folder requests go through `DropboxRepository` and the Dropbox SDK to the authorized App Folder. Local **Log out** returns to sign-in but keeps the shared Dropbox connection; **Disconnect project storage** removes that connection from this device.
+
+```mermaid
+flowchart TD
+    A["Open app"] --> B{"Local user signed in?"}
+    B -- No --> C["Register or sign in locally"]
+    B -- Yes --> D["MainActivity"]
+    C --> D
+    D --> E["Account: connect or disconnect Dropbox"]
+    E --> F["OAuth PKCE, verify, save encrypted session"]
+    D --> G["Files: browse and manage folders"]
+    D --> H["Search: find files and folders"]
+    H -- Folder result --> G
+    H -- File result --> I["TransferActivity"]
+    G -- Upload or select file --> I
+    G --> J["DropboxRepository and SDK"]
+    H --> J
+    I -- Upload, download, preview --> J
+    J --> K["Authorized Dropbox App Folder"]
+```
+
 ## Run
 
 1. Open this repository's root in Android Studio. Use the bundled JBR 21 and Android SDK 36.1; the app supports Android 8.0 (API 26) and later.
