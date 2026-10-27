@@ -1,23 +1,23 @@
 # Dropbox Client Android
 
-A six-member USTH Mobile Application Development project built with **Java and XML** (`vn.edu.usth.dropboxclient`). The app uses a local account for entry and a separately authorized Dropbox account for real cloud operations. Dropbox access is limited to the Developer App's **Scoped App Folder**.
+An Android client for the team's Dropbox App Folder, built with **Java and XML** (`vn.edu.usth.dropboxclient`) for USTH Mobile Application Development. Local sign-in opens the app; a separate Dropbox connection enables cloud operations. The app can access only its configured App Folder.
 
 ## Features
 
 - Create and sign in to a local account without a personal email. Local logout keeps the device's Dropbox connection; **Disconnect project storage** removes it explicitly.
-- Connect Dropbox with OAuth 2.0 PKCE and verify the connection with `DropboxRepository.getCurrentAccount()`. Account shows only the local username and Dropbox connection state; it does not display profile names, email addresses or a Dropbox account ID.
+- Connect Dropbox with OAuth 2.0 PKCE. Account shows the local username and connection status without displaying Dropbox profile details.
 - Browse root and nested folders, return to a parent folder, refresh and load more pages. Files, empty folders and errors have visible states.
 - Search the authorized App Folder with Dropbox `files.searchV2`, open a matching folder in Files, and load more search results.
 - Create, rename and delete folders with validation, conflict feedback and delete confirmation.
 - Upload from Android's document picker into the folder currently open in **Files**. Tap a file for details and use **Download from Dropbox** to choose a local save destination.
 - Preview JPG, PNG, WEBP, GIF and PDF files up to 20 MiB in an installed Android viewer. The app checks both reported size and actual downloaded bytes, and shares only a temporary read-only content URI. Preview copies older than 24 hours are removed when preparing another preview.
 
-The local account is a coursework entry mechanism, not a production identity service or a separate Dropbox account for each user. Local accounts on the same device share its authorized project App Folder.
+Local accounts on the same device share its Dropbox connection and App Folder. Signing in locally does not create a separate Dropbox account.
 
 ## Application workflow
 
-1. Register or sign in with a local username. The app opens **Account**, **Files**, and **Search** in `MainActivity`.
-2. In **Account**, choose **Set up project storage**. Dropbox OAuth 2.0 PKCE authorizes the App Folder; the app verifies the connection and saves the credential encrypted on this device. Files and Search need this connection.
+1. Register or sign in locally. `MainActivity` opens with **Account**, **Files**, and **Search** tabs.
+2. In **Account**, choose **Set up project storage** and authorize Dropbox. The app checks the connection and saves the credential encrypted on this device. Files and Search need this connection.
 3. In **Files**, browse folders, refresh or load more entries, manage folders, upload a document, or tap a file to download or preview it. **Search** finds files and folders by name; a folder result opens in Files, while a file result opens the transfer screen.
 4. File and folder requests go through `DropboxRepository` and the Dropbox SDK to the authorized App Folder. Local **Log out** returns to sign-in but keeps the shared Dropbox connection; **Disconnect project storage** removes that connection from this device.
 
@@ -27,14 +27,17 @@ flowchart TD
     B -- No --> C["Register or sign in locally"]
     B -- Yes --> D["MainActivity"]
     C --> D
-    D --> E["Account: connect or disconnect Dropbox"]
-    E --> F["OAuth PKCE, verify, save encrypted session"]
+    D --> E["Account tab"]
+    E -- Connect --> F["OAuth PKCE and connection check"]
+    F --> S["Save encrypted connection"]
+    E -- Disconnect --> X["Remove saved connection"]
     D --> G["Files: browse and manage folders"]
     D --> H["Search: find files and folders"]
     H -- Folder result --> G
     H -- File result --> I["TransferActivity"]
     G -- Upload or select file --> I
-    G --> J["DropboxRepository and SDK"]
+    S --> J["DropboxRepository and SDK"]
+    G --> J
     H --> J
     I -- Upload, download, preview --> J
     J --> K["Authorized Dropbox App Folder"]
@@ -71,10 +74,8 @@ LoginActivity (local account)
 
 ## Verification and limits
 
-On 26 October 2026, the updated source passed the app/test APK builds, **41/41 unit tests**, and lint with **0 errors, 8 warnings**. The Pixel 10 instrumentation suite reported **19 passed, 4 intentionally skipped live tests, 0 failures**. Coverage includes local login/logout, folder and transfer services, exact-byte streams, preview limits and private content URIs, picker cancellation, invalid paths, unsupported previews, missing Dropbox connections, and transfer-screen recreation.
+On 26 October 2026, both debug APKs built, **41 unit tests passed**, and lint reported **0 errors, 8 warnings**. On Pixel 10, **19 device tests passed**; four live tests were skipped by default. A separate test on an authorized Pixel 6 exercised **Files → upload → download → Search → preview** against Dropbox and compared the downloaded bytes. It supplied test results to Android's file pickers and intercepted the viewer launch, so manual file selection and viewing still need a device check. See [transfer acceptance](docs/transfer-review.md) for details.
 
-The opt-in UI/API acceptance test also passed on authorized Pixel 6: **Files → upload → download → Search → preview**, using the real Dropbox API and exact-byte comparison. Picker results and viewer launch were intercepted by the test; manually choosing a document and rendering it in an installed viewer remain manual acceptance steps. Earlier live checks verified account lookup, folder listing and folder create/rename/delete. See [transfer acceptance](docs/transfer-review.md). Account intentionally shows only the local username and connection state.
-
-Use small files. Preview requires an installed viewer, is limited to 20 MiB and caches a temporary copy in app storage. Large upload sessions, background recovery, progress percentages, and automatic retry of uncertain writes are outside this MVP. A failure after a download starts writing may leave a partial destination. Each newly installed device must complete its own Dropbox authorization.
+Use small files. Preview needs an installed viewer and is limited to 20 MiB. Large upload sessions, background recovery, progress percentages and automatic retry are outside this version. An interrupted download may leave a partial local file. Each new device must authorize Dropbox separately.
 
 [Team development without shared credentials](docs/team-development.md) explains how members build and test without sharing the project's Dropbox login.

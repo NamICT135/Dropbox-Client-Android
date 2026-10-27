@@ -14,7 +14,7 @@ Không có App key, phần tài khoản cục bộ và unit tests vẫn chạy, 
 ## Trình tự chạy trên điện thoại
 
 1. Mở **Dropbox Client**. Chọn **Create an account**, nhập username 3–24 ký tự và password 8–128 ký tự. Các ô tên và email có thể để trống; không cần email cá nhân.
-2. Sau khi vào **Account**, chọn **Set up project storage > Connect project Dropbox**. Trên trang cấp quyền Dropbox, kiểm tra tài khoản đang đăng nhập đúng là tài khoản nhóm rồi bấm **Allow**. Account trong app chỉ hiện **Connected to Dropbox**, không hiện tên hoặc email Dropbox. Nếu trình duyệt đang dùng tài khoản khác, chọn **Disconnect project storage** trong app, đăng xuất tài khoản đó trong trình duyệt, đăng nhập tài khoản nhóm rồi kết nối lại.
+2. Sau khi vào **Account**, chọn **Set up project storage > Connect to Dropbox**. Trên trang cấp quyền Dropbox, kiểm tra tài khoản đang đăng nhập đúng là tài khoản nhóm rồi bấm **Allow**. Account trong app chỉ hiện **Connected to Dropbox**, không hiện tên hoặc email Dropbox. Nếu trình duyệt đang dùng tài khoản khác, chọn **Disconnect project storage** trong app, đăng xuất tài khoản đó trong trình duyệt, đăng nhập tài khoản nhóm rồi kết nối lại.
 3. Chạm **Files** ở thanh dưới. App tải thư mục gốc của App Folder. Dùng **Refresh** để tải lại, chạm folder để mở, **Up** để quay về folder cha và **Load more** nếu còn trang.
 4. Chọn **Create folder**, nhập tên và xác nhận. Dùng nút menu cạnh folder để **Rename** hoặc **Delete**; Delete có hộp thoại xác nhận.
 5. Đứng trong folder cần tải lên, chạm **Upload file**, chọn một file nhỏ bằng Android document picker. App hiển thị tên và đường dẫn Dropbox thực tế; quay lại Files để xem danh sách đã refresh.
