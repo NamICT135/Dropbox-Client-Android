@@ -2,9 +2,9 @@
 
 ## 1. Mở đầu (30 giây)
 
-> Nhóm em xây dựng một Dropbox client trên Android bằng Java và XML. Trọng tâm của app là đọc và thao tác với **App Folder trên Dropbox thật** qua Dropbox API. App không lưu danh sách tệp giả. Khi có mạng và quyền hợp lệ, mọi thao tác Files, Search và truyền tệp đều có kết quả từ Dropbox.
+> Nhóm em xây dựng một Dropbox client cho Android bằng Java và XML. App dùng Dropbox API để xem, tìm kiếm và quản lý tệp trong App Folder đã được cấp quyền.
 
-Nói rõ phạm vi: App Folder là vùng riêng của Developer App, không phải toàn bộ Dropbox của người dùng. Nhóm chọn phạm vi này để dữ liệu thuyết trình tách biệt và dễ xóa sau khi thử.
+Nói rõ phạm vi: App Folder là vùng riêng của ứng dụng, không phải toàn bộ Dropbox của người dùng. Nhóm dùng vùng này để thử tính năng mà không đụng đến tệp cá nhân.
 
 ## 2. Ba màn hình chính (60 giây)
 
@@ -34,8 +34,8 @@ Nút trên màn hình (Activity / Fragment, XML)
 Chuẩn bị một folder và một file ảnh/PDF nhỏ, có thể xóa, trong App Folder. Không dùng file cá nhân trên màn hình chiếu.
 
 1. Mở app, đăng nhập bằng tài khoản cục bộ. Vào **Account** và chỉ trạng thái **Connected to Dropbox**. Giải thích: tên và email Dropbox được ẩn trên UI; kết nối vẫn được API xác minh.
-2. Vào **Files**, mở folder con, bấm **Up** để quay lại, bấm **Refresh**. Chỉ trạng thái loading, danh sách thật và trạng thái folder rỗng nếu có.
-3. Tạo folder thử bằng **Create folder**. Mở menu cạnh folder để **Rename** rồi **Delete**; cho thấy hộp thoại xác nhận. Đây là các lệnh ghi thật lên Dropbox.
+2. Vào **Files**, mở folder con, bấm **Up** để quay lại, bấm **Refresh**. Chỉ trạng thái loading, danh sách tệp và trạng thái folder rỗng nếu có.
+3. Tạo folder thử bằng **Create folder**. Mở menu cạnh folder để **Rename** rồi **Delete**; cho thấy hộp thoại xác nhận. Các thay đổi này được gửi lên Dropbox.
 4. Vào **Search**, nhập một phần tên file, bấm **Search Dropbox**. Chạm kết quả folder để chuyển về Files hoặc chạm file để mở màn hình truyền tệp.
 5. Với file ảnh/PDF nhỏ, bấm **Preview**. App tải bản xem trước vào cache riêng rồi cấp quyền đọc tạm cho viewer Android. Với file khác, bấm **Download from Dropbox** và chọn nơi lưu bằng Android file picker.
 6. Trong **Files**, bấm **Upload file** và chọn file thử bằng Android picker. Quay lại danh sách để thấy file vừa được tải lên. Sau đó tải file về và đối chiếu nội dung.
@@ -45,7 +45,7 @@ Nếu mạng yếu, ưu tiên bước 1–4 và dùng file nhỏ. Không khẳng
 
 ## 5. Câu hỏi thầy có thể hỏi (60–90 giây)
 
-**“Phần nào chứng minh app gọi Dropbox thật?”** Files và Search trả metadata từ Dropbox API. Upload/download dùng `DbxClientV2`; tên, đường dẫn và nội dung file được kiểm tra sau khi API trả kết quả. Màn hình Account gọi `getCurrentAccount()` để kiểm tra phiên.
+**“Dữ liệu trong app có đến từ Dropbox không?”** Files và Search lấy metadata qua Dropbox API. Upload/download dùng `DbxClientV2`; nhóm kiểm tra tên, đường dẫn và nội dung tệp sau khi API trả kết quả. Account gọi `getCurrentAccount()` để kiểm tra kết nối.
 
 **“Tại sao không chạy API trên main thread?”** Gọi mạng hoặc đọc file có thể chậm và làm app đứng. Nhóm dùng executor cho công việc nền, rồi đưa kết quả về main thread để cập nhật View.
 
@@ -57,6 +57,6 @@ Nếu mạng yếu, ưu tiên bước 1–4 và dùng file nhỏ. Không khẳng
 
 ## 6. Kết luận (20 giây)
 
-> App đã thể hiện trọn luồng Android → Dropbox OAuth → Dropbox SDK/API → dữ liệu App Folder thật. Điểm chính của bài là kết nối API có quyền phù hợp, tách UI với repository, xử lý tác vụ nền và phản hồi rõ ràng khi tải dữ liệu hoặc gặp lỗi.
+> Nhóm đã kết nối giao diện Android với Dropbox qua OAuth và SDK. Phần demo cho thấy app đọc và thay đổi tệp trong App Folder, đồng thời báo trạng thái khi đang tải hoặc gặp lỗi.
 
 Trước buổi trình bày, chạy lại đúng phiên bản PR đã merge và thử toàn bộ bước trên một thiết bị được kết nối **tài khoản Dropbox của nhóm**. Search có thể mất ít thời gian để thấy file vừa tải lên do Dropbox lập chỉ mục; nếu vậy dùng **Files → Refresh** để kiểm tra file ngay.

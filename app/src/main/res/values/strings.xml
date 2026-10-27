@@ -53,10 +53,10 @@
     <string name="demo_storage_error">Unable to read or save your account. Please try again.</string>
     <string name="demo_account_details">%1$s</string>
     <string name="demo_shared_storage">Accounts on this device use the same connected Dropbox storage.</string>
-    <string name="project_title">Project Dropbox storage</string>
+    <string name="project_title">Dropbox connection</string>
     <string name="project_ready">Dropbox will ask you to approve access to the project’s App Folder.</string>
     <string name="project_setup">Set up project storage</string>
-    <string name="project_connect">Connect project Dropbox</string>
+    <string name="project_connect">Connect to Dropbox</string>
     <string name="project_back">Back to account</string>
     <string name="project_setup_help">Connect your group’s Dropbox account on this device to browse and manage real files. Other users can sign in locally without its email or password.</string>
     <string name="project_not_connected">Dropbox is not connected. Connect a project account to browse files.</string>
@@ -92,7 +92,7 @@
     <string name="transfer_file_error">Unable to read or write the selected file. Choose another location and retry. An interrupted download may leave a partial local file.</string>
     <string name="transfer_session_error">Dropbox is not connected. Connect or renew access and try again.</string>
     <string name="preview_loading">Preparing preview…</string>
-    <string name="preview_opening">Opening preview in an Android viewer.</string>
+    <string name="preview_opening">Opening preview…</string>
     <string name="preview_unsupported">Preview supports JPG, PNG, WEBP, GIF and PDF. Download other files to open them.</string>
     <string name="preview_too_large">Preview is limited to 20 MB. Download this file instead.</string>
     <string name="preview_no_viewer">No app can open this file type. Download the file instead.</string>
