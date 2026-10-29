@@ -22,16 +22,31 @@
     <string name="files_refresh">Refresh</string>
     <string name="files_empty">This folder is empty.</string>
     <string name="files_load_error">Could not load this folder. Check your connection and files.metadata.read permission.</string>
+    <string name="dropbox_network_error">Network connection was interrupted. Check your connection and try again.</string>
+    <string name="dropbox_rate_limit">Dropbox is temporarily limiting requests. Wait a moment before trying again.</string>
+    <string name="dropbox_scope_error">Dropbox permission is missing. Reconnect and approve the required access.</string>
+    <string name="dropbox_not_found">This item is no longer on Dropbox. Refresh the folder and try again.</string>
+    <string name="dropbox_cloud_full">Dropbox storage is full. Free space in the connected account before uploading.</string>
+    <string name="transfer_partial_error">Writing failed. The selected local document may be incomplete. Check or remove it before retrying.</string>
     <string name="files_connect_required">Connect Dropbox from Account to browse files.</string>
     <string name="files_retry">Try again</string>
     <string name="files_more">Load more</string>
     <string name="files_page_error">Could not load more items. Try again.</string>
     <string name="files_folder_item">Folder: %1$s</string>
     <string name="files_file_item">File: %1$s</string>
+    <string name="files_size_bytes">%1$d bytes</string>
+    <string name="files_file_item_size">File: %1$s, %2$d bytes</string>
     <string name="files_file_details">Path: %1$s\nSize (bytes): %2$d</string>
     <string name="files_upload">Upload file</string>
     <string name="files_title">Files</string>
     <string name="files_menu">Folder options</string>
+    <string name="files_item_menu">Options for %1$s</string>
+    <string name="file_rename_title">Rename file</string>
+    <string name="file_delete_title">Delete file</string>
+    <string name="file_delete_confirm">Delete "%1$s" from Dropbox?</string>
+    <string name="file_invalid_name">Enter a different valid file name without / \ : * ? " &lt; &gt; |</string>
+    <string name="file_rename_success">File renamed to "%1$s".</string>
+    <string name="file_delete_success">File "%1$s" deleted.</string>
     <string name="login_title">Dropbox Client</string>
     <string name="login_tagline">Your group’s files, in one place.</string>
     <string name="auth_setup_required">Configure DROPBOX_APP_KEY in local.properties, then rebuild the app.</string>
@@ -89,7 +104,7 @@
     <string name="transfer_upload_success">Upload successful\nName: %1$s\nPath: %2$s\nSize (bytes): %3$d</string>
     <string name="transfer_download_success">Download successful\nName: %1$s\nSize (bytes): %2$d</string>
     <string name="transfer_api_error">Dropbox could not transfer this file. Check the path and network. If permissions changed, connect Dropbox again and allow file access.</string>
-    <string name="transfer_file_error">Unable to read or write the selected file. Choose another location and retry. An interrupted download may leave a partial local file.</string>
+    <string name="transfer_file_error">Unable to read or write the selected file. Check local storage space, choose another location and retry.</string>
     <string name="transfer_session_error">Dropbox is not connected. Connect or renew access and try again.</string>
     <string name="preview_loading">Preparing preview…</string>
     <string name="preview_opening">Opening preview…</string>
@@ -99,12 +114,12 @@
 
     <string name="login_heading">Sign in</string>
     <string name="register_heading">Create an account</string>
-    <string name="login_switch">New here? Create an account</string>
+    <string name="login_switch">Create an account</string>
     <string name="register_switch">Already have an account? Sign in</string>
     <string name="login_submit">Sign in</string>
     <string name="register_submit">Create account</string>
     <string name="profile_first_name">First name (optional)</string>
-    <string name="profile_last_name">Surname (optional)</string>
+    <string name="profile_last_name">Last name (optional)</string>
     <string name="profile_email">Email (optional)</string>
     <string name="profile_invalid_email">Enter a valid email address or leave it empty.</string>
     <string name="profile_invalid">Check the name and email fields.</string>
@@ -141,9 +156,9 @@
     <string name="folder_rename_success">Folder renamed to \"%1$s\".</string>
     <string name="folder_delete_success">Folder \"%1$s\" deleted.</string>
     <string name="folder_conflict_error">A folder or file with this name already exists.</string>
-    <string name="folder_not_found_error">Folder was not found on Dropbox.</string>
+    <string name="folder_not_found_error">This item was not found on Dropbox. Refresh and try again.</string>
     <string name="folder_api_error">Dropbox could not complete this action. Check the connection and permissions, then refresh the folder before trying again.</string>
-    <string name="folder_action_hint">Use a folder’s menu to rename or delete it.</string>
+    <string name="folder_action_hint">Use an item’s menu to rename or delete it.</string>
     <string name="folder_invalid_path">This folder path is invalid. Refresh and select a folder again.</string>
     <string name="btn_cancel">Cancel</string>
 </resources>

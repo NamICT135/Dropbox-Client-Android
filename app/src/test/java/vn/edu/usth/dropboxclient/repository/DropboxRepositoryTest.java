@@ -106,4 +106,22 @@ public class DropboxRepositoryTest {
         assertEquals("https://api.dropboxapi.com/2/files/search/continue_v2", second.requestedUrl);
         assertFalse(last.getHasMore());
     }
+
+    @Test public void fileRenameAndDeleteUseDropboxMetadataAfterConfirmation() throws Exception {
+        String moved = "{\"metadata\":{\".tag\":\"file\",\"name\":\"Báo cáo.pdf\","
+                + "\"id\":\"id:file1\",\"client_modified\":\"2026-10-22T00:00:00Z\","
+                + "\"server_modified\":\"2026-10-22T00:00:00Z\",\"rev\":\"123456789\",\"size\":3}}";
+        StubRequestor moveTransport = new StubRequestor(200, moved);
+        assertEquals("Báo cáo.pdf", repository(moveTransport)
+                .renameFile("/old.pdf", "/Báo cáo.pdf").getName());
+        assertTrue(moveTransport.requestedUrl.endsWith("/files/move_v2"));
+
+        String deleted = "{\"metadata\":{\".tag\":\"file\",\"name\":\"Báo cáo.pdf\","
+                + "\"id\":\"id:file1\",\"client_modified\":\"2026-10-22T00:00:00Z\","
+                + "\"server_modified\":\"2026-10-22T00:00:00Z\",\"rev\":\"123456789\",\"size\":3}}";
+        StubRequestor deleteTransport = new StubRequestor(200, deleted);
+        assertEquals("Báo cáo.pdf", repository(deleteTransport)
+                .deleteFile("/Báo cáo.pdf").getName());
+        assertTrue(deleteTransport.requestedUrl.endsWith("/files/delete_v2"));
+    }
 }

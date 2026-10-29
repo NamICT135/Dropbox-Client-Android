@@ -5,7 +5,7 @@ import java.util.regex.Pattern;
 public final class FolderValidationHelper {
 
     private static final int MAX_NAME_LENGTH = 255;
-    // Disallowed characters in Dropbox file and folder names: / \ : * ? " < > |
+    // Disallowed characters in Dropbox file and folder names: / \ : * ? " < > | and controls.
     private static final Pattern INVALID_CHARS_PATTERN = Pattern.compile("[\\\\/:*?\"<>|]");
 
     public enum ValidationError {
@@ -35,6 +35,10 @@ public final class FolderValidationHelper {
 
         if (INVALID_CHARS_PATTERN.matcher(name).find()) {
             return ValidationError.INVALID_CHARACTERS;
+        }
+
+        for (int i = 0; i < name.length(); i++) {
+            if (Character.isISOControl(name.charAt(i))) return ValidationError.INVALID_CHARACTERS;
         }
 
         if (!name.equals(name.trim()) || name.endsWith(".")) {

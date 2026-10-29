@@ -174,4 +174,21 @@ public class DropboxFolderService {
     public void shutdown() {
         executor.shutdown();
     }
+
+    public Metadata renameFile(String currentPath, String newName) throws DbxException {
+        if (currentPath == null || !currentPath.startsWith("/") || currentPath.endsWith("/"))
+            throw new IllegalArgumentException("Invalid file path");
+        if (FolderValidationHelper.validateRename(
+                FolderValidationHelper.getNameFromPath(currentPath), newName)
+                != FolderValidationHelper.ValidationError.NONE)
+            throw new IllegalArgumentException("Invalid file name");
+        return repository.renameFile(currentPath, FolderValidationHelper.buildChildPath(
+                FolderValidationHelper.getParentPath(currentPath), newName));
+    }
+
+    public Metadata deleteFile(String path) throws DbxException {
+        if (path == null || !path.startsWith("/") || path.endsWith("/"))
+            throw new IllegalArgumentException("Invalid file path");
+        return repository.deleteFile(path);
+    }
 }

@@ -20,6 +20,7 @@ import org.junit.runner.RunWith;
 import vn.edu.usth.dropboxclient.auth.DemoAuthManager;
 import vn.edu.usth.dropboxclient.auth.SessionManager;
 import vn.edu.usth.dropboxclient.ui.transfer.TransferActivity;
+import vn.edu.usth.dropboxclient.ui.transfer.FilePickerHelper;
 import static androidx.test.espresso.Espresso.onView;
 import static androidx.test.espresso.action.ViewActions.*;
 import static androidx.test.espresso.assertion.ViewAssertions.matches;
@@ -81,6 +82,13 @@ public class TransferFlowTest {
             onView(withId(R.id.transfer_folder)).check(matches(withText(context.getString(R.string.transfer_folder, "/course"))));
             onView(withId(R.id.transfer_path)).perform(scrollTo()).check(matches(withText("/course/slides.pdf")));
         }
+    }
+
+    @Test public void savePickerAdvertisesFileMime() {
+        assertEquals("application/pdf", FilePickerHelper.createDownloadIntent("report.pdf").getType());
+        assertEquals("image/jpeg", FilePickerHelper.createDownloadIntent("Ảnh.JPG").getType());
+        assertEquals("image/png", FilePickerHelper.createDownloadIntent("image.png").getType());
+        assertEquals("application/octet-stream", FilePickerHelper.createDownloadIntent("unknown.zzz").getType());
     }
 
     @Test public void cancellingBothDocumentPickersReenablesTransferActions() throws Exception {

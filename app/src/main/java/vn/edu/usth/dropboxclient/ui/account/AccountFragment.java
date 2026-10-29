@@ -24,6 +24,7 @@ import vn.edu.usth.dropboxclient.auth.DropboxClientFactory;
 import vn.edu.usth.dropboxclient.auth.DropboxConnection;
 import vn.edu.usth.dropboxclient.auth.SessionManager;
 import vn.edu.usth.dropboxclient.repository.DropboxRepository;
+import vn.edu.usth.dropboxclient.repository.DropboxErrors;
 import vn.edu.usth.dropboxclient.ui.login.LoginActivity;
 
 public class AccountFragment extends Fragment {
@@ -68,6 +69,7 @@ public class AccountFragment extends Fragment {
     }
     private void load(View view, SessionManager cloud) {
         int request = ++generation;
+        long localRevision = new DemoAuthManager(requireContext()).sessionRevision();
         TextView info = view.findViewById(R.id.account_info);
         info.setText(R.string.account_loading);
         view.findViewById(R.id.account_retry).setEnabled(false);
@@ -101,7 +103,7 @@ public class AccountFragment extends Fragment {
                     message = cleared ? R.string.project_expired : R.string.session_error;
                     retry = !cleared;
                 } else {
-                    message = R.string.account_error;
+                    message = DropboxErrors.message(e, R.string.account_error);
                     retry = true;
                 }
             } catch (GeneralSecurityException | IOException e) {
@@ -120,7 +122,8 @@ public class AccountFragment extends Fragment {
             long completedRevision = revision + (cleared ? 1 : 0);
             main.post(() -> {
                 if (request != generation || getView() != view
-                        || new DemoAuthManager(requireContext()).currentUsername() == null) {
+                        || new DemoAuthManager(requireContext()).currentUsername() == null
+                        || new DemoAuthManager(requireContext()).sessionRevision() != localRevision) {
                     return;
                 }
                 if (cloud.revision() != completedRevision) {

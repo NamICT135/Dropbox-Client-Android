@@ -73,19 +73,28 @@ public class DropboxTransferService {
             );
         }
 
-        // Check the server response before opening/truncating the destination.
-        try (DbxDownloader<FileMetadata> download = repository.openDownload(dropboxPath);
-             OutputStream outputStream =
-                     context.getContentResolver()
-                             .openOutputStream(destinationUri, "w")) {
-
-            if (outputStream == null) {
-                throw new IOException(
-                        "Cannot open destination file"
-                );
+        File temporary = File.createTempFile("dropbox-download-", ".tmp", context.getCacheDir());
+        try {
+            FileMetadata metadata;
+            try (DbxDownloader<FileMetadata> download = repository.openDownload(dropboxPath);
+                 OutputStream staged = new FileOutputStream(temporary)) {
+                metadata = download.download(staged);
             }
-
-            return download.download(outputStream);
+            VerifiedDownload.verify(temporary, metadata.getSize(), metadata.getContentHash());
+            // SAF cannot atomically replace every provider URI. Never delete the user's URI:
+            // ACTION_CREATE_DOCUMENT may return an existing document selected for replacement.
+            boolean opened = false;
+            try (OutputStream destination = context.getContentResolver().openOutputStream(destinationUri, "rwt")) {
+                if (destination == null) throw new IOException("Cannot open destination file");
+                opened = true;
+                VerifiedDownload.copy(temporary, destination);
+            } catch (IOException e) {
+                if (opened) throw new PartialDestinationException(e);
+                throw e;
+            }
+            return metadata;
+        } finally {
+            if (!temporary.delete()) temporary.deleteOnExit();
         }
     }
 
@@ -118,6 +127,12 @@ public class DropboxTransferService {
 
     public static final class PreviewTooLargeException extends IOException {
         public PreviewTooLargeException() { super("Preview exceeds the supported size"); }
+    }
+
+    public static final class PartialDestinationException extends IOException {
+        public PartialDestinationException(IOException cause) {
+            super("The destination may contain a partial file; choose a new location before retrying", cause);
+        }
     }
 
     private static void validatePath(String path) {

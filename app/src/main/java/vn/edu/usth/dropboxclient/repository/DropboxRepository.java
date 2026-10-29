@@ -69,4 +69,12 @@ public class DropboxRepository {
     public Metadata deleteFolder(String path) throws DbxException {
         return client.files().deleteV2(path).getMetadata();
     }
+
+    public Metadata renameFile(String fromPath, String toPath) throws DbxException {
+        return client.files().moveV2(fromPath, toPath).getMetadata();
+    }
+
+    public Metadata deleteFile(String path) throws DbxException {
+        return client.files().deleteV2(path).getMetadata();
+    }
 }

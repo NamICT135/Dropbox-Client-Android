@@ -28,6 +28,9 @@ public final class DemoAuthManager {
 
     public String currentUsername() { return preferences.getString("current_user", null); }
 
+    /** Changes on every local login/logout, including a return to the same username. */
+    public long sessionRevision() { return preferences.getLong("local_session_revision", 0); }
+
     public String currentDisplayName() {
         String user = currentUsername();
         if (user == null) return "";
@@ -66,7 +69,9 @@ public final class DemoAuthManager {
         if (!preferences.edit().putString("user." + user, record)
                 .putString("profile." + user + ".name", (firstName + " " + lastName).trim())
                 .putString("profile." + user + ".email", email)
-                .putString("current_user", user).commit()) throw new IOException("Unable to save demo account");
+                .putString("current_user", user)
+                .putLong("local_session_revision", sessionRevision() + 1).commit())
+            throw new IOException("Unable to save demo account");
         return Result.SUCCESS;
     }
 
@@ -87,7 +92,8 @@ public final class DemoAuthManager {
             boolean matches = MessageDigest.isEqual(expected, actual);
             Arrays.fill(actual, (byte) 0);
             if (!matches) return Result.INVALID_CREDENTIALS;
-            if (!preferences.edit().putString("current_user", user).commit())
+            if (!preferences.edit().putString("current_user", user)
+                    .putLong("local_session_revision", sessionRevision() + 1).commit())
                 throw new IOException("Unable to save demo session");
             return Result.SUCCESS;
         } catch (IllegalArgumentException e) {
@@ -96,7 +102,8 @@ public final class DemoAuthManager {
     }
 
     /** Removes only the demo session; the project Dropbox connection is managed separately. */
-    public boolean logout() { return preferences.edit().remove("current_user").commit(); }
+    public boolean logout() { return preferences.edit().remove("current_user")
+            .putLong("local_session_revision", sessionRevision() + 1).commit(); }
 
     private static String normalize(String username) { return username.trim().toLowerCase(Locale.ROOT); }
     private static String encode(byte[] data) { return Base64.getEncoder().encodeToString(data); }
