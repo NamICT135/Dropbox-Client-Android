@@ -37,6 +37,7 @@ import vn.edu.usth.dropboxclient.R;
 import vn.edu.usth.dropboxclient.auth.DropboxClientFactory;
 import vn.edu.usth.dropboxclient.auth.SessionManager;
 import vn.edu.usth.dropboxclient.repository.DropboxRepository;
+import vn.edu.usth.dropboxclient.repository.DropboxErrors;
 import vn.edu.usth.dropboxclient.ui.main.MainActivity;
 import vn.edu.usth.dropboxclient.ui.transfer.TransferActivity;
 
@@ -101,6 +102,8 @@ public class SearchFragment extends Fragment {
         int request = ++generation;
         View view = content;
         String requestedQuery = query;
+        long localRevision = new vn.edu.usth.dropboxclient.auth.DemoAuthManager(view.getContext()).sessionRevision();
+        long sessionRevision = new SessionManager(view.getContext()).revision();
         String requestedCursor = nextPage ? cursor : null;
         busy = true;
         view.findViewById(R.id.search_more).setVisibility(View.GONE);
@@ -121,17 +124,24 @@ public class SearchFragment extends Fragment {
                             : repository.continueSearch(requestedCursor);
                 }
             } catch (InvalidAccessTokenException e) {
-                new SessionManager(view.getContext()).clear();
+                new SessionManager(view.getContext()).clearIfCurrent(sessionRevision);
                 error = R.string.project_expired;
             } catch (GeneralSecurityException | IOException e) {
                 error = R.string.session_error;
             } catch (DbxException e) {
-                error = R.string.search_error;
+                error = DropboxErrors.message(e, R.string.search_error);
             }
             SearchV2Result result = page;
             int message = error;
             main.post(() -> {
-                if (content != view || request != generation) return;
+                if (content != view || request != generation
+                        || new vn.edu.usth.dropboxclient.auth.DemoAuthManager(view.getContext()).sessionRevision() != localRevision) return;
+                if (new SessionManager(view.getContext()).revision()
+                        != sessionRevision + (message == R.string.project_expired ? 1 : 0)) {
+                    busy = false;
+                    search(query);
+                    return;
+                }
                 busy = false;
                 view.findViewById(R.id.search_progress).setVisibility(View.GONE);
                 if (result == null) {

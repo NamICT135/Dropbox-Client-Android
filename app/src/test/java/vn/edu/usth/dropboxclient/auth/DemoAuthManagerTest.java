@@ -16,6 +16,7 @@ public class DemoAuthManagerTest {
                 new Class<?>[]{SharedPreferences.class}, (proxy, method, args) -> {
                     switch (method.getName()) {
                         case "getString": return values.getOrDefault((String) args[0], args[1]);
+                        case "getLong": return values.getOrDefault((String) args[0], args[1]);
                         case "contains": return values.containsKey(args[0]);
                         case "edit": return editor(writesSucceed);
                         default: throw new UnsupportedOperationException(method.getName());
@@ -28,6 +29,7 @@ public class DemoAuthManagerTest {
                 new Class<?>[]{SharedPreferences.Editor.class}, (proxy, method, args) -> {
                     switch (method.getName()) {
                         case "putString": pending.put((String) args[0], args[1]); return proxy;
+                        case "putLong": pending.put((String) args[0], args[1]); return proxy;
                         case "remove": pending.put((String) args[0], null); return proxy;
                         case "commit":
                         case "apply":
@@ -45,10 +47,13 @@ public class DemoAuthManagerTest {
         char[] secret = UUID.randomUUID().toString().toCharArray();
         assertEquals(DemoAuthManager.Result.SUCCESS, demo.register(" Student_01 ", secret));
         assertEquals("student_01", new DemoAuthManager(preferences).currentUsername());
+        long firstSession = demo.sessionRevision();
         demo.logout();
         assertNull(demo.currentUsername());
+        assertTrue(demo.sessionRevision() > firstSession);
         assertEquals(DemoAuthManager.Result.SUCCESS, demo.login("STUDENT_01", secret));
         assertEquals("student_01", demo.currentUsername());
+        assertTrue(demo.sessionRevision() > firstSession + 1);
     }
     @Test public void rejectsDuplicateBadCredentialsAndEmailUsername() throws Exception {
         DemoAuthManager demo = new DemoAuthManager(preferences(true));

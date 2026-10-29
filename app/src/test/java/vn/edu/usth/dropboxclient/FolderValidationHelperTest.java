@@ -39,6 +39,7 @@ public class FolderValidationHelperTest {
         assertEquals(ValidationError.INVALID_CHARACTERS, FolderValidationHelper.validateFolderName("folder<name"));
         assertEquals(ValidationError.INVALID_CHARACTERS, FolderValidationHelper.validateFolderName("folder>name"));
         assertEquals(ValidationError.INVALID_CHARACTERS, FolderValidationHelper.validateFolderName("folder|name"));
+        assertEquals(ValidationError.INVALID_CHARACTERS, FolderValidationHelper.validateFolderName("folder\nname"));
     }
 
     @Test

@@ -9,7 +9,7 @@ public class FilePickerHelper {
     public static Intent createDownloadIntent(String fileName) {
         Intent intent = new Intent(Intent.ACTION_CREATE_DOCUMENT);
         intent.addCategory(Intent.CATEGORY_OPENABLE);
-        intent.setType("application/octet-stream");
+        intent.setType(DownloadMimeType.forName(fileName));
         intent.putExtra(Intent.EXTRA_TITLE, fileName);
 
         return intent;

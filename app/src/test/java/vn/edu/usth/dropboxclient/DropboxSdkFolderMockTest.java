@@ -176,5 +176,8 @@ public class DropboxSdkFolderMockTest {
         // Delete root
         assertThrows(IllegalArgumentException.class, () -> service.deleteFolder("/"));
         assertThrows(IllegalArgumentException.class, () -> service.deleteFolder(""));
+        assertThrows(IllegalArgumentException.class, () -> service.renameFile("/old.pdf", "bad/name.pdf"));
+        assertThrows(IllegalArgumentException.class, () -> service.renameFile("/old.pdf", "old.pdf"));
+        assertThrows(IllegalArgumentException.class, () -> service.deleteFile("/"));
     }
 }

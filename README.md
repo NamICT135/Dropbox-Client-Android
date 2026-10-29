@@ -2,13 +2,15 @@
 
 An Android client for the team's Dropbox App Folder, built with **Java and XML** (`vn.edu.usth.dropboxclient`) for USTH Mobile Application Development. Local sign-in opens the app; a separate Dropbox connection enables cloud operations. The app can access only its configured App Folder.
 
+Current MVP verification and release notes: [docs/mvp-status-vi.md](docs/mvp-status-vi.md).
+
 ## Features
 
 - Create and sign in to a local account without a personal email. Local logout keeps the device's Dropbox connection; **Disconnect project storage** removes it explicitly.
 - Connect Dropbox with OAuth 2.0 PKCE. Account shows the local username and connection status without displaying Dropbox profile details.
 - Browse root and nested folders, return to a parent folder, refresh and load more pages. Files, empty folders and errors have visible states.
 - Search the authorized App Folder with Dropbox `files.searchV2`, open a matching folder in Files, and load more search results.
-- Create, rename and delete folders with validation, conflict feedback and delete confirmation.
+- Create, rename and delete folders; rename and delete files with validation, conflict feedback and delete confirmation.
 - Upload from Android's document picker into the folder currently open in **Files**. Tap a file for details and use **Download from Dropbox** to choose a local save destination.
 - Preview JPG, PNG, WEBP, GIF and PDF files up to 20 MiB in an installed Android viewer. The app checks both reported size and actual downloaded bytes, and shares only a temporary read-only content URI. Preview copies older than 24 hours are removed when preparing another preview.
 
@@ -74,8 +76,8 @@ LoginActivity (local account)
 
 ## Verification and limits
 
-On 26 October 2026, both debug APKs built, **41 unit tests passed**, and lint reported **0 errors, 8 warnings**. On Pixel 10, **19 device tests passed**; four live tests were skipped by default. A separate test on an authorized Pixel 6 exercised **Files → upload → download → Search → preview** against Dropbox and compared the downloaded bytes. It supplied test results to Android's file pickers and intercepted the viewer launch, so manual file selection and viewing still need a device check. See [transfer acceptance](docs/transfer-review.md) for details.
+On 29 October 2026, `assembleDebug`, **47 JVM tests** and `lintDebug` passed offline (0 errors, 11 warnings). On an emulator, **13 isolated device tests** passed. These tests do not confirm Dropbox live behavior. Historical live testing on 26 October 2026 used an authorized Pixel 6 for Files → upload → download → Search → preview; the current changes still need a live regression run. See [current MVP status](docs/mvp-status-vi.md) and [transfer acceptance](docs/transfer-review.md).
 
-Use small files. Preview needs an installed viewer and is limited to 20 MiB. Large upload sessions, background recovery, progress percentages and automatic retry are outside this version. An interrupted download may leave a partial local file. Each new device must authorize Dropbox separately.
+Use small files. Preview needs an installed viewer and is limited to 20 MiB. Large upload sessions, background recovery, progress percentages and automatic retry are outside this version. Downloads are verified in temporary storage before writing the selected URI; a failure while writing that URI may leave a partial local document. Each new device must authorize Dropbox separately.
 
 [Team development without shared credentials](docs/team-development.md) explains how members build and test without sharing the project's Dropbox login.

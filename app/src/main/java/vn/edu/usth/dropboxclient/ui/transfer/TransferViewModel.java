@@ -2,6 +2,8 @@ package vn.edu.usth.dropboxclient.ui.transfer;
 
 import android.app.Application;
 import android.net.Uri;
+import android.os.Handler;
+import android.os.Looper;
 import androidx.annotation.NonNull;
 import androidx.lifecycle.AndroidViewModel;
 import androidx.lifecycle.LiveData;
@@ -15,6 +17,9 @@ import java.util.Locale;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import vn.edu.usth.dropboxclient.R;
+import vn.edu.usth.dropboxclient.auth.DemoAuthManager;
+import vn.edu.usth.dropboxclient.auth.SessionManager;
+import vn.edu.usth.dropboxclient.repository.DropboxErrors;
 import vn.edu.usth.dropboxclient.ui.folder.FolderValidationHelper;
 
 /** Keeps a foreground transfer and its result through screen rotation. */
@@ -43,6 +48,8 @@ public class TransferViewModel extends AndroidViewModel {
 
     private final ExecutorService io = Executors.newSingleThreadExecutor();
     private final MutableLiveData<State> state;
+    private final Handler main = new Handler(Looper.getMainLooper());
+    private volatile long generation;
 
     public TransferViewModel(@NonNull Application application) {
         super(application);
@@ -54,6 +61,7 @@ public class TransferViewModel extends AndroidViewModel {
     public boolean isBusy() { return state.getValue() != null && state.getValue().busy; }
 
     public void showMessage(int message) {
+        generation++;
         State current = state.getValue();
         state.setValue(new State(false, getApplication().getString(message),
                 current == null ? null : current.uploadedPath));
@@ -84,7 +92,14 @@ public class TransferViewModel extends AndroidViewModel {
             return;
         }
         state.setValue(new State(true, getApplication().getString(R.string.preview_loading), null));
+        long request = ++generation;
+        long localRevision = new DemoAuthManager(getApplication()).sessionRevision();
+        long cloudRevision = new SessionManager(getApplication()).revision();
         io.execute(() -> {
+            if (!current(request, localRevision, cloudRevision)) {
+                postCurrent(null, request, localRevision, cloudRevision);
+                return;
+            }
             Application app = getApplication();
             File file = null;
             String message;
@@ -93,8 +108,8 @@ public class TransferViewModel extends AndroidViewModel {
                 try {
                     service = DropboxTransferFactory.create(app);
                 } catch (GeneralSecurityException | IOException e) {
-                    state.postValue(new State(false,
-                            app.getString(R.string.transfer_session_error), null));
+                    postCurrent(new State(false, app.getString(R.string.transfer_session_error), null),
+                            request, localRevision, cloudRevision);
                     return;
                 }
                 File directory = new File(app.getCacheDir(), "previews");
@@ -111,27 +126,34 @@ public class TransferViewModel extends AndroidViewModel {
                 String suffix = path.substring(path.lastIndexOf('.')).toLowerCase(Locale.ROOT);
                 file = File.createTempFile("preview-", suffix, directory);
                 service.downloadPreview(path, file, MAX_PREVIEW_BYTES);
-                state.postValue(new State(false, app.getString(R.string.preview_opening),
-                        null, file, mime));
+                postCurrent(new State(false, app.getString(R.string.preview_opening),
+                        null, file, mime), request, localRevision, cloudRevision);
                 return;
             } catch (DropboxTransferService.PreviewTooLargeException e) {
                 message = app.getString(R.string.preview_too_large);
             } catch (DbxException e) {
-                message = app.getString(R.string.transfer_api_error);
+                message = app.getString(DropboxErrors.message(e, R.string.transfer_api_error));
             } catch (IOException | SecurityException e) {
                 message = app.getString(R.string.transfer_file_error);
             } catch (IllegalArgumentException e) {
                 message = app.getString(R.string.transfer_invalid_path);
             }
             if (file != null) file.delete();
-            state.postValue(new State(false, message, null));
+            postCurrent(new State(false, message, null), request, localRevision, cloudRevision);
         });
     }
 
     public void upload(Uri source, String folderPath) {
         if (isBusy()) return;
         state.setValue(new State(true, getApplication().getString(R.string.transfer_uploading), null));
+        long request = ++generation;
+        long localRevision = new DemoAuthManager(getApplication()).sessionRevision();
+        long cloudRevision = new SessionManager(getApplication()).revision();
         io.execute(() -> {
+            if (!current(request, localRevision, cloudRevision)) {
+                postCurrent(null, request, localRevision, cloudRevision);
+                return;
+            }
             String message;
             String uploadedPath = null;
             try {
@@ -140,8 +162,8 @@ public class TransferViewModel extends AndroidViewModel {
                 try {
                     service = DropboxTransferFactory.create(app);
                 } catch (GeneralSecurityException | IOException e) {
-                    state.postValue(new State(false,
-                            app.getString(R.string.transfer_session_error), null));
+                    postCurrent(new State(false, app.getString(R.string.transfer_session_error), null),
+                            request, localRevision, cloudRevision);
                     return;
                 }
                 String name = FileInfoHelper.getFileName(app, source);
@@ -151,20 +173,27 @@ public class TransferViewModel extends AndroidViewModel {
                 message = app.getString(R.string.transfer_upload_success,
                         file.getName(), uploadedPath, file.getSize());
             } catch (DbxException e) {
-                message = getApplication().getString(R.string.transfer_api_error);
+                message = getApplication().getString(DropboxErrors.message(e, R.string.transfer_api_error));
             } catch (IOException | SecurityException e) {
                 message = getApplication().getString(R.string.transfer_file_error);
             } catch (IllegalArgumentException e) {
                 message = getApplication().getString(R.string.transfer_invalid_name);
             }
-            state.postValue(new State(false, message, uploadedPath));
+            postCurrent(new State(false, message, uploadedPath), request, localRevision, cloudRevision);
         });
     }
 
     public void download(String path, Uri destination) {
         if (isBusy()) return;
         state.setValue(new State(true, getApplication().getString(R.string.transfer_downloading), null));
+        long request = ++generation;
+        long localRevision = new DemoAuthManager(getApplication()).sessionRevision();
+        long cloudRevision = new SessionManager(getApplication()).revision();
         io.execute(() -> {
+            if (!current(request, localRevision, cloudRevision)) {
+                postCurrent(null, request, localRevision, cloudRevision);
+                return;
+            }
             String message;
             try {
                 Application app = getApplication();
@@ -172,25 +201,49 @@ public class TransferViewModel extends AndroidViewModel {
                 try {
                     service = DropboxTransferFactory.create(app);
                 } catch (GeneralSecurityException | IOException e) {
-                    state.postValue(new State(false,
-                            app.getString(R.string.transfer_session_error), null));
+                    postCurrent(new State(false, app.getString(R.string.transfer_session_error), null),
+                            request, localRevision, cloudRevision);
                     return;
                 }
                 FileMetadata file = service.downloadFile(path, destination);
                 message = getApplication().getString(R.string.transfer_download_success,
                         file.getName(), file.getSize());
             } catch (DbxException e) {
-                message = getApplication().getString(R.string.transfer_api_error);
+                message = getApplication().getString(DropboxErrors.message(e, R.string.transfer_api_error));
+            } catch (DropboxTransferService.PartialDestinationException e) {
+                message = getApplication().getString(R.string.transfer_partial_error);
             } catch (IOException | SecurityException e) {
                 message = getApplication().getString(R.string.transfer_file_error);
             } catch (IllegalArgumentException e) {
                 message = getApplication().getString(R.string.transfer_invalid_path);
             }
-            state.postValue(new State(false, message, null));
+            postCurrent(new State(false, message, null), request, localRevision, cloudRevision);
+        });
+    }
+
+    private boolean current(long request, long localRevision, long cloudRevision) {
+        Application app = getApplication();
+        return generation == request
+                && new DemoAuthManager(app).sessionRevision() == localRevision
+                && new SessionManager(app).revision() == cloudRevision;
+    }
+
+    private void postCurrent(State result, long request, long localRevision, long cloudRevision) {
+        main.post(() -> {
+            if (generation != request) return;
+            if (current(request, localRevision, cloudRevision)) {
+                if (result != null) state.setValue(result);
+            } else {
+                // An old transfer must not keep the retained screen disabled after Disconnect.
+                generation++;
+                state.setValue(new State(false,
+                        getApplication().getString(R.string.transfer_session_error), null));
+            }
         });
     }
 
     @Override protected void onCleared() {
-        io.shutdown();
+        generation++;
+        io.shutdownNow();
     }
 }

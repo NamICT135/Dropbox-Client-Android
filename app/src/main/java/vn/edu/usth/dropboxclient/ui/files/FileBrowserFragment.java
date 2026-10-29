@@ -8,10 +8,12 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ImageView;
+import android.widget.EditText;
 import android.widget.TextView;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AlertDialog;
+import androidx.activity.OnBackPressedCallback;
 import androidx.fragment.app.Fragment;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
@@ -36,6 +38,7 @@ import vn.edu.usth.dropboxclient.R;
 import vn.edu.usth.dropboxclient.auth.DropboxClientFactory;
 import vn.edu.usth.dropboxclient.auth.SessionManager;
 import vn.edu.usth.dropboxclient.repository.DropboxRepository;
+import vn.edu.usth.dropboxclient.repository.DropboxErrors;
 import vn.edu.usth.dropboxclient.ui.folder.CreateFolderDialogFragment;
 import vn.edu.usth.dropboxclient.ui.folder.DeleteFolderDialogFragment;
 import vn.edu.usth.dropboxclient.ui.folder.DropboxFolderFactory;
@@ -50,8 +53,10 @@ public class FileBrowserFragment extends Fragment implements
         RenameFolderDialogFragment.OnFolderRenameListener,
         DeleteFolderDialogFragment.OnFolderDeleteListener {
     private static final String KEY_PATH = "folder_path";
+    private static final String KEY_HISTORY = "folder_history";
     private final Handler main = new Handler(Looper.getMainLooper());
     private final List<Metadata> entries = new ArrayList<>();
+    private final ArrayList<String> history = new ArrayList<>();
     private ExecutorService io;
     private FileAdapter adapter;
     private String path = "";
@@ -77,8 +82,13 @@ public class FileBrowserFragment extends Fragment implements
         super.onViewCreated(view, state);
         content = view;
         firstResume = true;
+        history.clear();
         io = Executors.newSingleThreadExecutor();
-        if (state != null) path = state.getString(KEY_PATH, "");
+        if (state != null) {
+            path = state.getString(KEY_PATH, "");
+            ArrayList<String> saved = state.getStringArrayList(KEY_HISTORY);
+            if (saved != null) history.addAll(saved);
+        }
         else if (getArguments() != null) path = getArguments().getString(KEY_PATH, "");
         adapter = new FileAdapter();
         RecyclerView list = view.findViewById(R.id.recyclerViewFiles);
@@ -103,6 +113,20 @@ public class FileBrowserFragment extends Fragment implements
         view.findViewById(R.id.files_upload).setOnClickListener(v ->
                 startActivity(new Intent(requireContext(), TransferActivity.class)
                         .putExtra(TransferActivity.EXTRA_FOLDER_PATH, path)));
+        requireActivity().getOnBackPressedDispatcher().addCallback(getViewLifecycleOwner(),
+                new OnBackPressedCallback(true) {
+                    @Override public void handleOnBackPressed() {
+                        if (actionBusy) return;
+                        if (history.isEmpty()) {
+                            setEnabled(false);
+                            requireActivity().getOnBackPressedDispatcher().onBackPressed();
+                            return;
+                        }
+                        path = history.remove(history.size() - 1);
+                        clearActionStatus();
+                        refresh();
+                    }
+                });
         updateHeader();
         refresh();
     }
@@ -115,6 +139,8 @@ public class FileBrowserFragment extends Fragment implements
 
     private void openFolder(String folderPath) {
         if (actionBusy) return;
+        if (path.equals(folderPath)) return;
+        history.add(path);
         clearActionStatus();
         path = folderPath;
         refresh();
@@ -140,6 +166,9 @@ public class FileBrowserFragment extends Fragment implements
         final int request = ++generation;
         final View view = content;
         final String requestedPath = path;
+        final String requestedUser = new vn.edu.usth.dropboxclient.auth.DemoAuthManager(view.getContext()).currentUsername();
+        final long localRevision = new vn.edu.usth.dropboxclient.auth.DemoAuthManager(view.getContext()).sessionRevision();
+        final long sessionRevision = new SessionManager(view.getContext()).revision();
         final String requestedCursor = nextPage ? cursor : null;
         busy = true;
         view.findViewById(R.id.files_refresh).setEnabled(false);
@@ -163,17 +192,26 @@ public class FileBrowserFragment extends Fragment implements
                             : repository.continueListFolder(requestedCursor);
                 }
             } catch (InvalidAccessTokenException e) {
-                new SessionManager(view.getContext()).clear();
+                new SessionManager(view.getContext()).clearIfCurrent(sessionRevision);
                 error = R.string.project_expired;
             } catch (GeneralSecurityException | IOException e) {
                 error = R.string.session_error;
             } catch (DbxException e) {
-                error = R.string.files_load_error;
+                error = DropboxErrors.message(e, R.string.files_load_error);
             }
             ListFolderResult page = result;
             int message = error;
             main.post(() -> {
-                if (content != view || request != generation) return;
+                if (content != view || request != generation
+                        || !java.util.Objects.equals(requestedUser,
+                        new vn.edu.usth.dropboxclient.auth.DemoAuthManager(view.getContext()).currentUsername())
+                        || new vn.edu.usth.dropboxclient.auth.DemoAuthManager(view.getContext()).sessionRevision() != localRevision) return;
+                if (new SessionManager(view.getContext()).revision()
+                        != sessionRevision + (message == R.string.project_expired ? 1 : 0)) {
+                    busy = false;
+                    refresh();
+                    return;
+                }
                 busy = false;
                 view.findViewById(R.id.files_refresh).setEnabled(true);
                 if (page == null) {
@@ -188,12 +226,16 @@ public class FileBrowserFragment extends Fragment implements
                     }
                     return;
                 }
-                int start = entries.size();
                 actionNeedsRefresh = false;
                 view.findViewById(R.id.files_create).setEnabled(true);
                 view.findViewById(R.id.files_upload).setEnabled(true);
-                entries.addAll(page.getEntries());
-                adapter.notifyItemRangeInserted(start, page.getEntries().size());
+                List<Metadata> before = new ArrayList<>(entries);
+                MetadataPages.merge(entries, page.getEntries());
+                for (int i = 0; i < before.size(); i++) {
+                    if (!before.get(i).equals(entries.get(i))) adapter.notifyItemChanged(i);
+                }
+                if (entries.size() > before.size())
+                    adapter.notifyItemRangeInserted(before.size(), entries.size() - before.size());
                 cursor = page.getHasMore() ? page.getCursor() : null;
                 showState(entries.isEmpty() ? State.EMPTY : State.SUCCESS);
                 view.findViewById(R.id.files_more).setVisibility(cursor == null ? View.GONE : View.VISIBLE);
@@ -233,6 +275,9 @@ public class FileBrowserFragment extends Fragment implements
         actionBusy = true;
         View view = content;
         int request = ++generation;
+        final String requestedUser = new vn.edu.usth.dropboxclient.auth.DemoAuthManager(view.getContext()).currentUsername();
+        final long localRevision = new vn.edu.usth.dropboxclient.auth.DemoAuthManager(view.getContext()).sessionRevision();
+        final long sessionRevision = new SessionManager(view.getContext()).revision();
         view.findViewById(R.id.files_create).setEnabled(false);
         view.findViewById(R.id.files_upload).setEnabled(false);
         view.findViewById(R.id.files_refresh).setEnabled(false);
@@ -245,7 +290,7 @@ public class FileBrowserFragment extends Fragment implements
                 service = DropboxFolderFactory.create(view.getContext());
                 action.run(service);
             } catch (InvalidAccessTokenException e) {
-                new SessionManager(view.getContext()).clear();
+                new SessionManager(view.getContext()).clearIfCurrent(sessionRevision);
                 failure = e;
             } catch (DbxException | GeneralSecurityException | IOException | IllegalArgumentException e) {
                 failure = e;
@@ -254,7 +299,17 @@ public class FileBrowserFragment extends Fragment implements
             }
             Exception error = failure;
             main.post(() -> {
-                if (content != view || request != generation) return;
+                if (content != view || request != generation
+                        || !java.util.Objects.equals(requestedUser,
+                        new vn.edu.usth.dropboxclient.auth.DemoAuthManager(view.getContext()).currentUsername())
+                        || new vn.edu.usth.dropboxclient.auth.DemoAuthManager(view.getContext()).sessionRevision() != localRevision) return;
+                if (new SessionManager(view.getContext()).revision()
+                        != sessionRevision + (error instanceof InvalidAccessTokenException ? 1 : 0)) {
+                    actionBusy = false;
+                    actionNeedsRefresh = false;
+                    refresh();
+                    return;
+                }
                 actionBusy = false;
                 view.findViewById(R.id.files_refresh).setEnabled(true);
                 updateHeader();
@@ -316,7 +371,58 @@ public class FileBrowserFragment extends Fragment implements
                 }).show();
     }
 
+    private void showFileMenu(FileMetadata file) {
+        if (busy || actionBusy || actionNeedsRefresh) return;
+        String filePath = file.getPathDisplay() != null ? file.getPathDisplay() : file.getPathLower();
+        if (filePath == null) return;
+        new AlertDialog.Builder(requireContext()).setTitle(file.getName())
+                .setItems(new String[]{getString(R.string.folder_rename), getString(R.string.folder_delete)},
+                        (dialog, which) -> {
+                            if (which == 0) showRenameFile(filePath, file.getName());
+                            else showDeleteFile(filePath, file.getName());
+                        }).show();
+    }
+
+    private void showRenameFile(String filePath, String oldName) {
+        EditText input = new EditText(requireContext());
+        input.setSingleLine(true);
+        input.setText(oldName);
+        input.setSelection(0, oldName.length());
+        int pad = (int) (16 * getResources().getDisplayMetrics().density);
+        input.setPadding(pad, pad, pad, pad);
+        AlertDialog dialog = new AlertDialog.Builder(requireContext())
+                .setTitle(R.string.file_rename_title).setView(input)
+                .setPositiveButton(R.string.folder_rename, null)
+                .setNegativeButton(R.string.btn_cancel, null).create();
+        dialog.setOnShowListener(ignored -> dialog.getButton(AlertDialog.BUTTON_POSITIVE)
+                .setOnClickListener(v -> {
+                    String name = input.getText().toString();
+                    if (FolderValidationHelper.validateRename(oldName, name)
+                            != FolderValidationHelper.ValidationError.NONE) {
+                        input.setError(getString(R.string.file_invalid_name));
+                        return;
+                    }
+                    dialog.dismiss();
+                    runFolderAction(R.string.folder_action_renaming, R.string.file_rename_success,
+                            name, service -> service.renameFile(filePath, name));
+                }));
+        dialog.show();
+    }
+
+    private void showDeleteFile(String filePath, String name) {
+        new AlertDialog.Builder(requireContext()).setTitle(R.string.file_delete_title)
+                .setMessage(getString(R.string.file_delete_confirm, name))
+                .setPositiveButton(R.string.folder_delete, (dialog, which) ->
+                        runFolderAction(R.string.folder_action_deleting, R.string.file_delete_success,
+                                name, service -> service.deleteFile(filePath)))
+                .setNegativeButton(R.string.btn_cancel, null).show();
+    }
+
     private int folderErrorMessage(Exception error) {
+        if (error instanceof DbxException) {
+            int mapped = DropboxErrors.message((DbxException) error, 0);
+            if (mapped != 0) return mapped;
+        }
         if (error instanceof InvalidAccessTokenException) return R.string.project_expired;
         if (error instanceof CreateFolderErrorException) {
             CreateFolderErrorException value = (CreateFolderErrorException) error;
@@ -352,6 +458,7 @@ public class FileBrowserFragment extends Fragment implements
 
     @Override public void onSaveInstanceState(@NonNull Bundle state) {
         state.putString(KEY_PATH, path);
+        state.putStringArrayList(KEY_HISTORY, history);
         super.onSaveInstanceState(state);
     }
 
@@ -378,11 +485,20 @@ public class FileBrowserFragment extends Fragment implements
             Metadata item = entries.get(position);
             boolean folder = item instanceof FolderMetadata;
             holder.label.setText(item.getName());
-            holder.itemView.setContentDescription(getString(
-                    folder ? R.string.files_folder_item : R.string.files_file_item, item.getName()));
+            holder.path.setVisibility(folder ? View.GONE : View.VISIBLE);
+            if (!folder && item instanceof FileMetadata)
+                holder.path.setText(getString(R.string.files_size_bytes, ((FileMetadata) item).getSize()));
+            holder.itemView.setContentDescription(folder
+                    ? getString(R.string.files_folder_item, item.getName())
+                    : getString(R.string.files_file_item_size, item.getName(),
+                    ((FileMetadata) item).getSize()));
             holder.icon.setImageResource(folder ? R.drawable.ic_folder : R.drawable.ic_file);
-            holder.menu.setVisibility(folder ? View.VISIBLE : View.GONE);
-            holder.menu.setOnClickListener(folder ? v -> showFolderMenu(item) : null);
+            holder.menu.setVisibility(View.VISIBLE);
+            holder.menu.setContentDescription(getString(R.string.files_item_menu, item.getName()));
+            holder.menu.setOnClickListener(v -> {
+                if (folder) showFolderMenu(item);
+                else if (item instanceof FileMetadata) showFileMenu((FileMetadata) item);
+            });
             holder.itemView.setOnClickListener(v -> {
                 if (actionBusy) return;
                 if (folder) {
@@ -392,21 +508,24 @@ public class FileBrowserFragment extends Fragment implements
                     showFileDetails((FileMetadata) item);
                 }
             });
-            holder.itemView.setOnLongClickListener(folder ? v -> {
-                showFolderMenu(item);
+            holder.itemView.setOnLongClickListener(v -> {
+                if (folder) showFolderMenu(item);
+                else if (item instanceof FileMetadata) showFileMenu((FileMetadata) item);
                 return true;
-            } : null);
+            });
         }
 
         @Override public int getItemCount() { return entries.size(); }
 
         private final class Holder extends RecyclerView.ViewHolder {
             final TextView label;
+            final TextView path;
             final ImageView icon;
             final View menu;
             Holder(View row) {
                 super(row);
                 label = row.findViewById(R.id.file_name);
+                path = row.findViewById(R.id.file_path);
                 icon = row.findViewById(R.id.file_icon);
                 menu = row.findViewById(R.id.file_menu);
             }

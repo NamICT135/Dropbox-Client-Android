@@ -95,6 +95,18 @@ public class DropboxTransferServiceIoTest {
         } finally { Files.deleteIfExists(output); }
     }
 
+    @Test public void incompleteServerBodyDoesNotTouchExistingDestination() throws Exception {
+        Context context = InstrumentationRegistry.getInstrumentation().getTargetContext();
+        Path output = Files.createTempFile(context.getCacheDir().toPath(), "transfer-kept-", ".bin");
+        try {
+            Files.write(output, CONTENT);
+            Transport transport = new Transport(false, METADATA.replace("\"size\":5", "\"size\":6"));
+            assertThrows(java.io.IOException.class, () ->
+                    service(context, transport).downloadFile("/roundtrip.bin", Uri.fromFile(output.toFile())));
+            assertArrayEquals(CONTENT, Files.readAllBytes(output));
+        } finally { Files.deleteIfExists(output); }
+    }
+
     @Test public void previewChecksSizeBeforeWritingAndUsesPrivateContentUri() throws Exception {
         Context context = InstrumentationRegistry.getInstrumentation().getTargetContext();
         Path directory = context.getCacheDir().toPath().resolve("previews");
